@@ -97,14 +97,14 @@ namespace Homework.TelegramBot.ConsoleApp
                 return;
             }
 
-            string echoText = command.Substring(6).Trim();
+            string echoText = command.IndexOf(' ') > 0 ? command.Substring(6).Trim() : String.Empty;
             if (!string.IsNullOrEmpty(echoText))
             {
                 Console.WriteLine($"{_userName}, вы написали: {echoText}");
             }
             else
             {
-                Console.WriteLine("Пожалуйста, добавте текст после команды /echo.");
+                Console.WriteLine("Пожалуйста, добавьте пробел и текст после команды /echo.");
             }
         }
 
