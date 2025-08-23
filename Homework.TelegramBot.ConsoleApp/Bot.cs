@@ -27,7 +27,7 @@ namespace Homework.TelegramBot.ConsoleApp
             }
             else
             {
-                Console.WriteLine($"Вы {_userName}.");
+                Console.WriteLine($"{_userName}!");
                 Console.WriteLine($"Ваш лимит задач: {_userData.TasksLimit}, текущие задачи: {_userData.Tasks.Count}.");
                 Console.WriteLine($"Ваш лимит длины задачи: {_userData.TaskLengthLimit}.");
                 Console.WriteLine("Доступные команды: /start, /help, /info, /exit, /echo, /addtask, /showtasks, /removetask");

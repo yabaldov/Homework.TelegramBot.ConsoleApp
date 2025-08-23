@@ -24,15 +24,27 @@ namespace Homework.TelegramBot.ConsoleApp
 			}
 
 			Console.Write("Пожалуйста, введите описание задачи: ");
-			string task = Console.ReadLine().Trim();
-
-			if (task.Length > _taskLengthLimit)
+			string? input = Console.ReadLine();
+			string taskDescription = input?.Trim() ?? string.Empty;
+			
+			if (string.IsNullOrWhiteSpace(taskDescription))
 			{
-				throw new TaskLengthLimitException(task.Length, _taskLengthLimit);
+				Console.WriteLine("Ошибка: Описание задачи не может быть пустым!");
+				return;
 			}
 
-			_tasks.Add(task);
-			Console.WriteLine($"Задача \"{task}\" добавлена.");
+			if (taskDescription.Length > _taskLengthLimit)
+			{
+				throw new TaskLengthLimitException(taskDescription.Length, _taskLengthLimit);
+			}
+
+			if (_tasks.Contains(taskDescription))
+			{
+				throw new DuplicateTaskException(taskDescription);
+			}
+
+			_tasks.Add(taskDescription);
+			Console.WriteLine($"Задача \"{taskDescription}\" добавлена.");
 		}
 
 		public void ShowTasks()

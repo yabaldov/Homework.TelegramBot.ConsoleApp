@@ -73,6 +73,11 @@ namespace Homework.TelegramBot.ConsoleApp
 					Console.WriteLine($"Ошибка: {ex.Message}");
 					continue;
 				}
+				catch (DuplicateTaskException ex)
+				{
+					Console.WriteLine($"Ошибка: {ex.Message}");
+					continue;
+				}
 				catch (Exception ex)
 				{
 					hasUnexpectedError = true;
