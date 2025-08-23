@@ -7,18 +7,31 @@ namespace Homework.TelegramBot.ConsoleApp
         private string _userName;
         private bool _isRunning;
         private readonly Tasker _tasker;
-
-        public Bot()
+        private UserData _userData;
+        
+        public Bot(UserData userData)
         {
-            _userName = string.Empty;
             _isRunning = true;
-            _tasker = new Tasker();
+            _userName = userData.UserName;
+            _tasker = new Tasker(userData.Tasks, userData.TasksLimit, userData.TaskLengthLimit);
+            _userData = userData;
         }
 
         public void Run()
         {
-            Console.WriteLine("Добро пожаловать в симулятор бота Телеграм!");
-            Console.WriteLine("Доступные команды: /start, /help, /info, /exit");
+            Console.WriteLine("----------------------------------------------------------------");
+            if (string.IsNullOrEmpty(_userName))
+            {
+                Console.WriteLine("Доступные команды: /start, /help, /info, /exit");
+                Console.WriteLine("Пожалуйста, сначала используйте команду /start для ввода вашего имени.");
+            }
+            else
+            {
+                Console.WriteLine($"Вы {_userName}.");
+                Console.WriteLine($"Ваш лимит задач: {_userData.TasksLimit}, текущие задачи: {_userData.Tasks.Count}.");
+                Console.WriteLine($"Ваш лимит длины задачи: {_userData.TaskLengthLimit}.");
+                Console.WriteLine("Доступные команды: /start, /help, /info, /exit, /echo, /addtask, /showtasks, /removetask");
+            }
 
             while (_isRunning)
             {
@@ -62,6 +75,12 @@ namespace Homework.TelegramBot.ConsoleApp
         {
             Console.Write("Пожалуйста, введите ваше Введите своё имя: ");
             _userName = Console.ReadLine();
+            if (string.IsNullOrEmpty(_userName))
+            {
+                Console.WriteLine("Имя не может быть пустым. Пожалуйста, попробуйте снова.");
+                return;
+            }
+            _userData.UserName = _userName.Trim();
             Console.WriteLine($"Привет, {_userName}!");
             Console.WriteLine("Теперь вы ещё можете использовать команды: /echo, /addtask, /showtask, /rermovetask");
         }
@@ -85,8 +104,8 @@ namespace Homework.TelegramBot.ConsoleApp
         private void ShowInfo()
         {
             Console.WriteLine("Программа: Симулятор бота Телеграм.");
-            Console.WriteLine("Версия: 0.0.2");
-            Console.WriteLine("Дата создания: 2024-12-04");
+            Console.WriteLine("Версия: 0.0.3");
+            Console.WriteLine("Дата создания: 2025-08-22");
         }
 
         private void Echo(string command)

@@ -104,7 +104,7 @@
 
 ### Описание/Пошаговая инструкция выполнения домашнего задания
 
-Перед выполнением нужно ознакомится с [Правила отправки домашнего задания на проверку](https://github.com/OTUS-NET/C-Sharp-Basic/blob/main/Homeworks/README.md "Правила отправки домашнего задания на проверку")
+Перед выполнением нужно ознакомится с [Правила отправки домашнего задания на проверку](https://github.com/OTUS-NET/C-Sharp-Basic/blob/main/Homeworks/README.md)
 
 1. Добавить глобальный try catch
     - Добавьте try catch в метод Main
@@ -113,7 +113,7 @@
     - При старте приложения выводите текст «Введите максимально допустимое количество задач»
     - Ожидайте ввод из консоли. Это должно быть число от 1 до 100, иначе нужно выбросить исключение `ArgumentException` с сообщением.
     - В методе Main добавьте отдельный catch для типа ArgumentException и в нем выводите в консоль только сообщение из исключения.
-    - Создайте свой тип исключения `TaskCountLimitException`, который в конструкторе должен принимать только int taskCountLimit, а сообщение должно быть вида $“Превышено максимальное количество задач равное {taskCountLimit}“ [https://learn.microsoft.com/en-us/dotnet/standard/exceptions/how-to-create-user-defined-exceptions](https://learn.microsoft.com/en-us/dotnet/standard/exceptions/how-to-create-user-defined-exceptions "https://learn.microsoft.com/en-us/dotnet/standard/exceptions/how-to-create-user-defined-exceptions")
+    - Создайте свой тип исключения `TaskCountLimitException`, который в конструкторе должен принимать только int taskCountLimit, а сообщение должно быть вида `$“Превышено максимальное количество задач равное {taskCountLimit}“` [How to create user-defined exceptions](https://learn.microsoft.com/en-us/dotnet/standard/exceptions/how-to-create-user-defined-exceptions).
     - Добавьте проверку на максимально допустимое количество задач в обработчик команды /addtask. Если количество превышено, то нужно выбросить исключение `TaskCountLimitException`.
     - В методе Main добавьте отдельный catch для типа `TaskCountLimitException` и в нем выводите в консоль только сообщение из исключения.
     - Попадание в catch не должно останавливать работу приложения
