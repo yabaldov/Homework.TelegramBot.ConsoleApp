@@ -26,6 +26,11 @@ namespace Homework.TelegramBot.ConsoleApp
             _tasks = new List<string>();
         }
 
+        public bool IsUserDataLimitsNotSet()
+        {
+            return _tasksLimit < 1 || _taskLengthLimit < 1;
+        }
+
         public string UserName
         {
             get => _userName;

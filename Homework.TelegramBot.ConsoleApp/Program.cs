@@ -25,33 +25,15 @@ namespace Homework.TelegramBot.ConsoleApp
 			{
 				try
 				{
-                    if (userData.TasksLimit < 1 || userData.TaskLengthLimit < 1) {
-						Console.Write("Введите максимально допустимое количество задач: ");
+                    if (userData.IsUserDataLimitsNotSet()) {
+						Console.Write("Введите максимально допустимое количество задач (1-100): ");
 						string? input = Console.ReadLine();
-						if (!int.TryParse(input, out int tasksLimit))
-						{
-							Console.WriteLine($"Введено некорректное число: \"{input}\".");
-							continue;
-						}
-						if (tasksLimit < minTasksLimit || tasksLimit > maxTasksLimit)
-						{
-							throw new ArgumentException($"Максимально допустимое количество задач должно быть в диапазоне от {minTasksLimit} до {maxTasksLimit}. Введено: {tasksLimit}");
-						}
+						userData.TasksLimit = StringValidator.ParseAndValidateInt(input, minTasksLimit, maxTasksLimit);
 
-						Console.Write("Введите максимально допустимую длину задачи: ");
+						Console.Write("Введите максимально допустимую длину задачи (1-100): ");
 						input = Console.ReadLine();
-						if (!int.TryParse(input, out int taskLengthLimit))
-						{
-							Console.WriteLine($"Введено некорректное число: \"{input}\".");
-							continue;
-						}
-						if (taskLengthLimit < minTaskLength || taskLengthLimit > maxTaskLength)
-						{
-							throw new ArgumentException($"Максимально допустимая длина задачи должна быть в диапазоне от {minTasksLimit} до {maxTasksLimit}. Введено: {taskLengthLimit}");
-						}
+						userData.TaskLengthLimit = StringValidator.ParseAndValidateInt(input, minTaskLength, maxTaskLength);
 
-						userData.TasksLimit = tasksLimit;
-						userData.TaskLengthLimit = taskLengthLimit;
 					}
 
 					var bot = new Bot(userData);

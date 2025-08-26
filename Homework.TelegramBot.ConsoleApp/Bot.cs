@@ -19,7 +19,7 @@ namespace Homework.TelegramBot.ConsoleApp
 
         public void Run()
         {
-            Console.WriteLine("----------------------------------------------------------------");
+            Console.WriteLine(new string('-', 80));
             if (string.IsNullOrEmpty(_userName))
             {
                 Console.WriteLine("Доступные команды: /start, /help, /info, /exit");
@@ -35,8 +35,10 @@ namespace Homework.TelegramBot.ConsoleApp
 
             while (_isRunning)
             {
-                Console.Write("\nВведите команду: ");
-                string command = Console.ReadLine();
+                Console.Write("Введите команду: ");
+                string? input = Console.ReadLine();
+                StringValidator.ValidateString(input);
+                string command = input!.Trim();
 
                 switch (command)
                 {
@@ -74,13 +76,11 @@ namespace Homework.TelegramBot.ConsoleApp
         private void Start()
         {
             Console.Write("Пожалуйста, введите ваше Введите своё имя: ");
-            _userName = Console.ReadLine();
-            if (string.IsNullOrEmpty(_userName))
-            {
-                Console.WriteLine("Имя не может быть пустым. Пожалуйста, попробуйте снова.");
-                return;
-            }
-            _userData.UserName = _userName.Trim();
+            string? input = Console.ReadLine();
+            StringValidator.ValidateString(input);
+            _userName = input!.Trim();
+            _userData.UserName = _userName;
+
             Console.WriteLine($"Привет, {_userName}!");
             Console.WriteLine("Теперь вы ещё можете использовать команды: /echo, /addtask, /showtask, /rermovetask");
         }
