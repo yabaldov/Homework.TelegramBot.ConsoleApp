@@ -6,18 +6,45 @@ namespace Homework.TelegramBot.ConsoleApp
 	public class Tasker
 	{
 		private List<string> _tasks;
+		private int _taskCountLimit;
+		private int _taskLengthLimit;
 
-		public Tasker()
+		public Tasker(List<string> tasks, int taskCountLimit, int taskLengthLimit)
 		{
-			_tasks = new List<string>();
+			_tasks = tasks;
+			_taskCountLimit = taskCountLimit;
+			_taskLengthLimit = taskLengthLimit;
 		}
 
 		public void AddTask()
 		{
+			if (_tasks.Count >= _taskCountLimit)
+			{
+				throw new TaskCountLimitException(_taskCountLimit);
+			}
+
 			Console.Write("Пожалуйста, введите описание задачи: ");
-			string task = Console.ReadLine();
-			_tasks.Add(task);
-			Console.WriteLine($"Задача \"{task}\" добавлена.");
+			string? input = Console.ReadLine();
+			string taskDescription = input?.Trim() ?? string.Empty;
+			
+			if (string.IsNullOrWhiteSpace(taskDescription))
+			{
+				Console.WriteLine("Ошибка: Описание задачи не может быть пустым!");
+				return;
+			}
+
+			if (taskDescription.Length > _taskLengthLimit)
+			{
+				throw new TaskLengthLimitException(taskDescription.Length, _taskLengthLimit);
+			}
+
+			if (_tasks.Contains(taskDescription))
+			{
+				throw new DuplicateTaskException(taskDescription);
+			}
+
+			_tasks.Add(taskDescription);
+			Console.WriteLine($"Задача \"{taskDescription}\" добавлена.");
 		}
 
 		public void ShowTasks()
