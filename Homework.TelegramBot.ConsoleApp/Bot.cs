@@ -75,14 +75,14 @@ namespace Homework.TelegramBot.ConsoleApp
 
         private void Start()
         {
-            Console.Write("Пожалуйста, введите ваше Введите своё имя: ");
+            Console.Write("Пожалуйста, введите ваше имя: ");
             string? input = Console.ReadLine();
             StringValidator.ValidateString(input);
             _userName = input!.Trim();
             _userData.UserName = _userName;
 
             Console.WriteLine($"Привет, {_userName}!");
-            Console.WriteLine("Теперь вы ещё можете использовать команды: /echo, /addtask, /showtask, /rermovetask");
+            Console.WriteLine("Теперь вы ещё можете использовать команды: /echo, /addtask, /showtasks, /removetask");
         }
 
         private void ShowHelp()

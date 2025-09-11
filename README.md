@@ -181,7 +181,7 @@
             - string Name
             - DateTime CreatedAt //Заполняется в конструкторе. DateTime.UtcNow
             - ToDoItemState State //Заполняется в конструкторе. ToDoItemState.Active
-            - DateTime? StateChangedAt 
+            - DateTime? StateChangedAt
     - У класса должен быть один конструктор с аргументами ToDoUser user, string name
     - Добавить использование класса `ToDoItem` вместо хранения только имени задачи
 3. Изменение логики `/showtasks`
