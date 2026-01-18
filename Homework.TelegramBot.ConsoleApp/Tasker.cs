@@ -107,5 +107,20 @@ namespace Homework.TelegramBot.ConsoleApp
 			task.StateChangedAt = DateTime.UtcNow;
 			Console.WriteLine($"Задача \"{task.Name}\" завершена.");
 		}
+
+		public void ShowAllTasks()
+		{
+			if (_tasks.Count == 0)
+			{
+				Console.WriteLine("Список задач пуст.");
+				return;
+			}
+
+			Console.WriteLine("Все задачи:");
+			foreach (var task in _tasks)
+			{
+				Console.WriteLine($"({task.State}) {task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}");
+			}
+		}
 	}
 }

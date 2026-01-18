@@ -67,6 +67,9 @@ namespace Homework.TelegramBot.ConsoleApp
                     case "/showtasks":
                         _tasker.ShowTasks();
                         break;
+                    case "/showalltasks":
+                        _tasker.ShowAllTasks();
+                        break;
                     case "/removetask":
                         _tasker.RemoveTask();
                         break;
