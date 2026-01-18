@@ -108,7 +108,9 @@ namespace Homework.TelegramBot.ConsoleApp
             {
                 Console.WriteLine("/echo [текст] -- повторить введённый текст.");
                 Console.WriteLine("/addtask -- добавить задачу в список.");
-                Console.WriteLine("/showtasks -- показать все задачи.");
+                Console.WriteLine("/showtasks -- показать активные задачи.");
+                Console.WriteLine("/showalltasks -- показать все задачи.");
+                Console.WriteLine("/completetask [Id] -- завершить задачу по Id.");
                 Console.WriteLine("/removetask -- удалить задачу из списка.");
             }
             Console.WriteLine("/exit -- выйти из программы.");
