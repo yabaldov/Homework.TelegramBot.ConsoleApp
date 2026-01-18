@@ -92,5 +92,20 @@ namespace Homework.TelegramBot.ConsoleApp
 				Console.WriteLine("Неверный номер задачи. Попробуйте ещё раз.");
 			}
 		}
+
+		public void CompleteTask(Guid id)
+		{
+			var task = _tasks.FirstOrDefault(t => t.Id == id);
+
+			if (task == null)
+			{
+				Console.WriteLine("Задача с указанным Id не найдена.");
+				return;
+			}
+
+			task.State = ToDoItemState.Completed;
+			task.StateChangedAt = DateTime.UtcNow;
+			Console.WriteLine($"Задача \"{task.Name}\" завершена.");
+		}
 	}
 }

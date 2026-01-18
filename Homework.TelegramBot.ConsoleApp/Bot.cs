@@ -70,6 +70,9 @@ namespace Homework.TelegramBot.ConsoleApp
                     case "/removetask":
                         _tasker.RemoveTask();
                         break;
+                    case string completeCommand when completeCommand.StartsWith("/completetask"):
+                        CompleteTask(completeCommand);
+                        break;
                     case "/exit":
                         Exit();
                         break;
@@ -138,6 +141,26 @@ namespace Homework.TelegramBot.ConsoleApp
         {
             Console.WriteLine("Выход из программы. Пока!");
             _isRunning = false;
+        }
+
+        private void CompleteTask(string command)
+        {
+            string idPart = command.Length > 13 ? command.Substring(13).Trim() : string.Empty;
+
+            if (string.IsNullOrEmpty(idPart))
+            {
+                Console.WriteLine("Пожалуйста, укажите Id задачи. Пример: /completetask 73c7940a-ca8c-4327-8a15-9119bffd1d5e");
+                return;
+            }
+
+            if (Guid.TryParse(idPart, out Guid taskId))
+            {
+                _tasker.CompleteTask(taskId);
+            }
+            else
+            {
+                Console.WriteLine("Неверный формат Id. Пожалуйста, введите корректный GUID.");
+            }
         }
     }
 }
