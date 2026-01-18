@@ -51,16 +51,18 @@ namespace Homework.TelegramBot.ConsoleApp
 
 		public void ShowTasks()
 		{
-			if (_tasks.Count == 0)
+			var activeTasks = _tasks.Where(t => t.State == ToDoItemState.Active).ToList();
+
+			if (activeTasks.Count == 0)
 			{
 				Console.WriteLine("Список задач пуст.");
 				return;
 			}
 
 			Console.WriteLine("Ваши задачи:");
-			for (int i = 0; i < _tasks.Count; i++)
+			foreach (var task in activeTasks)
 			{
-				Console.WriteLine($"{i + 1}. {_tasks[i].Name}");
+				Console.WriteLine($"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}");
 			}
 		}
 
