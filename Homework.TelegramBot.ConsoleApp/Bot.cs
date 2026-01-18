@@ -4,15 +4,15 @@ namespace Homework.TelegramBot.ConsoleApp
 {
     public class Bot
     {
-        private string _userName;
+        private ToDoUser? _user;
         private bool _isRunning;
         private readonly Tasker _tasker;
         private UserData _userData;
-        
+
         public Bot(UserData userData)
         {
             _isRunning = true;
-            _userName = userData.UserName;
+            _user = userData.User;
             _tasker = new Tasker(userData.Tasks, userData.TasksLimit, userData.TaskLengthLimit);
             _userData = userData;
         }
@@ -20,14 +20,14 @@ namespace Homework.TelegramBot.ConsoleApp
         public void Run()
         {
             Console.WriteLine(new string('-', 80));
-            if (string.IsNullOrEmpty(_userName))
+            if (_user == null)
             {
                 Console.WriteLine("Доступные команды: /start, /help, /info, /exit");
                 Console.WriteLine("Пожалуйста, сначала используйте команду /start для ввода вашего имени.");
             }
             else
             {
-                Console.WriteLine($"{_userName}!");
+                Console.WriteLine($"{_user.TelegramUserName}!");
                 Console.WriteLine($"Ваш лимит задач: {_userData.TasksLimit}, текущие задачи: {_userData.Tasks.Count}.");
                 Console.WriteLine($"Ваш лимит длины задачи: {_userData.TaskLengthLimit}.");
                 Console.WriteLine("Доступные команды: /start, /help, /info, /exit, /echo, /addtask, /showtasks, /removetask");
@@ -78,10 +78,10 @@ namespace Homework.TelegramBot.ConsoleApp
             Console.Write("Пожалуйста, введите ваше имя: ");
             string? input = Console.ReadLine();
             StringValidator.ValidateString(input);
-            _userName = input!.Trim();
-            _userData.UserName = _userName;
+            _user = new ToDoUser(input!.Trim());
+            _userData.User = _user;
 
-            Console.WriteLine($"Привет, {_userName}!");
+            Console.WriteLine($"Привет, {_user.TelegramUserName}!");
             Console.WriteLine("Теперь вы ещё можете использовать команды: /echo, /addtask, /showtasks, /removetask");
         }
 
@@ -91,7 +91,7 @@ namespace Homework.TelegramBot.ConsoleApp
             Console.WriteLine("/start -- начать работу и ввести своё имя.");
             Console.WriteLine("/help -- показать эту справку.");
             Console.WriteLine("/info -- показать информацию о программе.");
-            if (!string.IsNullOrEmpty(_userName))
+            if (_user != null)
             {
                 Console.WriteLine("/echo [текст] -- повторить введённый текст.");
                 Console.WriteLine("/addtask -- добавить задачу в список.");
@@ -110,7 +110,7 @@ namespace Homework.TelegramBot.ConsoleApp
 
         private void Echo(string command)
         {
-            if (string.IsNullOrEmpty(_userName))
+            if (_user == null)
             {
                 Console.WriteLine("Сначала используйте команду /start и введите своё имя.");
                 return;
@@ -119,7 +119,7 @@ namespace Homework.TelegramBot.ConsoleApp
             string echoText = command.IndexOf(' ') > 0 ? command.Substring(6).Trim() : String.Empty;
             if (!string.IsNullOrEmpty(echoText))
             {
-                Console.WriteLine($"{_userName}, вы написали: {echoText}");
+                Console.WriteLine($"{_user.TelegramUserName}, вы написали: {echoText}");
             }
             else
             {
