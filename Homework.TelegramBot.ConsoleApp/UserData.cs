@@ -8,14 +8,14 @@ namespace Homework.TelegramBot.ConsoleApp
         private ToDoUser? _user;
         private int _tasksLimit;
         private int _taskLengthLimit;
-        private List<string> _tasks;
+        private List<ToDoItem> _tasks;
 
         public UserData(ToDoUser user, int tasksLimit, int taskLengthLimit)
         {
             _user = user;
             _tasksLimit = tasksLimit;
             _taskLengthLimit = taskLengthLimit;
-            _tasks = new List<string>();
+            _tasks = new List<ToDoItem>();
         }
 
         public UserData(int tasksLimit, int taskLengthLimit)
@@ -23,7 +23,7 @@ namespace Homework.TelegramBot.ConsoleApp
             _user = null;
             _tasksLimit = tasksLimit;
             _taskLengthLimit = taskLengthLimit;
-            _tasks = new List<string>();
+            _tasks = new List<ToDoItem>();
         }
 
         public UserData()
@@ -31,7 +31,7 @@ namespace Homework.TelegramBot.ConsoleApp
             _user = null;
             _tasksLimit = 0;
             _taskLengthLimit = 0;
-            _tasks = new List<string>();
+            _tasks = new List<ToDoItem>();
         }
 
         public bool IsUserDataLimitsNotSet()
@@ -57,7 +57,7 @@ namespace Homework.TelegramBot.ConsoleApp
             set => _taskLengthLimit = value;
         }
 
-        public List<string> Tasks
+        public List<ToDoItem> Tasks
         {
             get => _tasks;
             set => _tasks = value;

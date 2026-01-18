@@ -55,7 +55,14 @@ namespace Homework.TelegramBot.ConsoleApp
                         Echo(echoCommand);
                         break;
                     case "/addtask":
-                        _tasker.AddTask();
+                        if (_user == null)
+                        {
+                            Console.WriteLine("Сначала используйте команду /start и введите своё имя.");
+                        }
+                        else
+                        {
+                            _tasker.AddTask(_user);
+                        }
                         break;
                     case "/showtasks":
                         _tasker.ShowTasks();
