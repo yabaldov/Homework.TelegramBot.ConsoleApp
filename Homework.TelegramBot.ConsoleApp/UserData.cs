@@ -5,25 +5,33 @@ namespace Homework.TelegramBot.ConsoleApp
 
     public class UserData
     {
-        private string _userName;
+        private ToDoUser? _user;
         private int _tasksLimit;
         private int _taskLengthLimit;
-        private List<string> _tasks;
+        private List<ToDoItem> _tasks;
 
-        public UserData(string userName, int tasksLimit, int taskLengthLimit)
+        public UserData(ToDoUser user, int tasksLimit, int taskLengthLimit)
         {
-            _userName = userName;
+            _user = user;
             _tasksLimit = tasksLimit;
             _taskLengthLimit = taskLengthLimit;
-            _tasks = new List<string>();
+            _tasks = new List<ToDoItem>();
+        }
+
+        public UserData(int tasksLimit, int taskLengthLimit)
+        {
+            _user = null;
+            _tasksLimit = tasksLimit;
+            _taskLengthLimit = taskLengthLimit;
+            _tasks = new List<ToDoItem>();
         }
 
         public UserData()
         {
-            _userName = string.Empty;
+            _user = null;
             _tasksLimit = 0;
             _taskLengthLimit = 0;
-            _tasks = new List<string>();
+            _tasks = new List<ToDoItem>();
         }
 
         public bool IsUserDataLimitsNotSet()
@@ -31,10 +39,10 @@ namespace Homework.TelegramBot.ConsoleApp
             return _tasksLimit < 1 || _taskLengthLimit < 1;
         }
 
-        public string UserName
+        public ToDoUser? User
         {
-            get => _userName;
-            set => _userName = value;
+            get => _user;
+            set => _user = value;
         }
 
         public int TasksLimit
@@ -49,7 +57,7 @@ namespace Homework.TelegramBot.ConsoleApp
             set => _taskLengthLimit = value;
         }
 
-        public List<string> Tasks
+        public List<ToDoItem> Tasks
         {
             get => _tasks;
             set => _tasks = value;
