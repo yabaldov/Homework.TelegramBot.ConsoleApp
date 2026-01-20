@@ -240,6 +240,7 @@
     - В конструктор добавить аргумент long telegramUserId
 4. Добавление класса сервиса `UserService`
     - Добавить интерфейс `IUserService`
+  
     ```csharp
     interface IUserService
     {
@@ -247,6 +248,7 @@
         ToDoUser? GetUser(long telegramUserId);
     }
     ```
+
     - Создать класс `UserService`, который реализует интерфейс `IUserService`. Заполнять telegramUserId и telegramUserName нужно из значений `Update.Message.From`
 5. Изменение логики команды `/start`
     - Не нужно запрашивать имя
