@@ -37,3 +37,7 @@ Desktop.ini
 
 # VSCode
 .vscode/
+
+# Other
+.claude/
+CLAUDE.md
