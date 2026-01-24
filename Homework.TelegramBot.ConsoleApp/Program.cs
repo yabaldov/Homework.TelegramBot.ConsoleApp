@@ -1,5 +1,8 @@
 using System;
 using Otus.ToDoList.ConsoleBot;
+using Homework.TelegramBot.ConsoleApp.Core.Services;
+using Homework.TelegramBot.ConsoleApp.Core.Validation;
+using Homework.TelegramBot.ConsoleApp.TelegramBot;
 
 namespace Homework.TelegramBot.ConsoleApp
 {

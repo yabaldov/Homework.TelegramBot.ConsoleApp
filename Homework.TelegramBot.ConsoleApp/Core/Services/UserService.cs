@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Services
 {
     public class UserService : IUserService
     {

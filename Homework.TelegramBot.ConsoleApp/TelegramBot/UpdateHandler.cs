@@ -2,8 +2,10 @@ using System;
 using System.Linq;
 using Otus.ToDoList.ConsoleBot;
 using Otus.ToDoList.ConsoleBot.Types;
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
+using Homework.TelegramBot.ConsoleApp.Core.Services;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 {
     public class UpdateHandler : IUpdateHandler
     {
@@ -256,12 +258,12 @@ namespace Homework.TelegramBot.ConsoleApp
             _toDoService.MarkCompleted(taskId);
             botClient.SendMessage(chat, $"Задача \"{task.Name}\" завершена.");
         }
-    
+
         private void HandleExit(ITelegramBotClient botClient, Chat chat)
         {
             botClient.SendMessage(chat, "Программа завершена.");
             Environment.Exit(0);
         }
-    
+
     }
 }

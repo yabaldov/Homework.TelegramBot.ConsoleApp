@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Services
 {
     public interface IToDoService
     {

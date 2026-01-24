@@ -1,8 +1,7 @@
 using System;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Validation
 {
-
     public class StringValidator
     {
         public static int ParseAndValidateInt(string? str, int min, int max)
@@ -24,7 +23,5 @@ namespace Homework.TelegramBot.ConsoleApp
                 throw new ArgumentException($"Строка не может быть пустой или состоять только из пробелов. Исходная строка: \"{str}\"");
             }
         }
-
     }
-
 }

@@ -294,7 +294,7 @@
 ## ДЗ № 6 Расширение функциональности бота
 
 ### Цель
-    
+
 Расширение функционала приложения, разработанного в предыдущих домашних заданиях:
 
 - Работа с классами и интерфейсами. Добавление репозиториев
@@ -309,6 +309,7 @@
 
 1. Добавление репозитория `IUserRepository`
     - Добавить интерфейс `IUserRepository`
+
     ```csharp
     interface IUserRepository
     {
@@ -317,10 +318,12 @@
         void Add(ToDoUser user);
     }
     ```
+
     - Создать класс `InMemoryUserRepository`, который реализует интерфейс `IUserRepository`. В качестве хранилища использовать List
     - Добавить использование `IUserRepository` в `UserService`. Получать `IUserRepository` нужно через конструктор
 2. Добавление репозитория `IToDoRepository`
     - Добавить интерфейс `IToDoRepository`
+
     ```csharp
     interface IToDoRepository
     {
@@ -337,17 +340,20 @@
         int CountActive(Guid userId); 
     }
     ```
+
     - Создать класс `InMemoryToDoRepository`, который реализует интерфейс `IToDoRepository`. В качестве хранилища использовать List
     - Добавить использование `IToDoRepository` в `ToDoService`. Получать `IToDoRepository` нужно через конструктор
 3. Кортежи. Добавление команды `/report`
     - Добавить метод `IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId);` в интерфейс `IToDoRepository`. Метод должен возвращать все задачи пользователя
     - Добавить интерфейс `IToDoReportService`
+
     ```csharp
     interface IToDoReportService
     {
         (int total, int completed, int active, DateTime generatedAt) GetUserStats(Guid userId);
     }
     ```
+
     - Создать класс `ToDoReportService`, который реализует интерфейс `IToDoReportService`.
     - Добавить обработку новой команды `/report`. Нужно использовать `IToDoReportService`
     - Пример вывода: Статистика по задачам на 01.01.2025 00:00:00. Всего: 10; Завершенных: 7; Активных: 3;
@@ -358,7 +364,8 @@
     - Пример команды: `/find Имя`
     - Вывод в консоль должен быть как в `/showtask`
 5. Рекомендуемая структура проекта
-    ```
+
+    ```text
     Project/
     ├── Core/
     │   ├── DataAccess/
@@ -388,7 +395,9 @@
         ├── UpdateHandler.cs
         └── ...
     ```
+
 6. Обновить `/help`
+
 ---
 
 ### Критерии оценивания

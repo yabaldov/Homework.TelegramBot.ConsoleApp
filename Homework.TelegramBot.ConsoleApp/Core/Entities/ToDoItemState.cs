@@ -1,4 +1,4 @@
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Entities
 {
     public enum ToDoItemState
     {

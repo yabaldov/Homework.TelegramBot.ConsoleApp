@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
+using Homework.TelegramBot.ConsoleApp.Core.Exceptions;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Services
 {
     public class ToDoService : IToDoService
     {
