@@ -1,88 +1,63 @@
-﻿using System;
-using System.IO;
-using Homework.TelegramBot.ConsoleApp;
+using System;
+using Otus.ToDoList.ConsoleBot;
 
 namespace Homework.TelegramBot.ConsoleApp
 {
-	public static class Program
-	{
-		static void Main(string[] args)
-		{
+    public static class Program
+    {
+        static void Main(string[] args)
+        {
+            const int minTasksLimit = 1;
+            const int maxTasksLimit = 100;
+            const int minTaskLength = 1;
+            const int maxTaskLength = 100;
 
+            Console.WriteLine($"Добро пожаловать в симулятор бота Телеграм!{Environment.NewLine}");
 
-			const int minTasksLimit = 1;
-			const int maxTasksLimit = 100;
-			const int minTaskLength = 1;
-			const int maxTaskLength = 100;
+            int tasksLimit = 0;
+            int taskLengthLimit = 0;
 
-			bool hasUnexpectedError = false;
+            while (tasksLimit == 0)
+            {
+                try
+                {
+                    Console.Write("Введите максимально допустимое количество задач (1-100): ");
+                    string? input = Console.ReadLine();
+                    tasksLimit = StringValidator.ParseAndValidateInt(input, minTasksLimit, maxTasksLimit);
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Ошибка: {ex.Message}");
+                }
+            }
 
-			var userData = new UserData();
-			
-			Console.WriteLine($"Добро пожаловать в симулятор бота Телеграм! {Environment.NewLine}");
+            while (taskLengthLimit == 0)
+            {
+                try
+                {
+                    Console.Write("Введите максимально допустимую длину задачи (1-100): ");
+                    string? input = Console.ReadLine();
+                    taskLengthLimit = StringValidator.ParseAndValidateInt(input, minTaskLength, maxTaskLength);
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Ошибка: {ex.Message}");
+                }
+            }
 
-			while (true)
-			{
-				try
-				{
-                    if (userData.IsUserDataLimitsNotSet()) {
-						Console.Write("Введите максимально допустимое количество задач (1-100): ");
-						string? input = Console.ReadLine();
-						userData.TasksLimit = StringValidator.ParseAndValidateInt(input, minTasksLimit, maxTasksLimit);
+            var userService = new UserService();
+            var toDoService = new ToDoService(tasksLimit, taskLengthLimit);
+            var updateHandler = new UpdateHandler(userService, toDoService);
 
-						Console.Write("Введите максимально допустимую длину задачи (1-100): ");
-						input = Console.ReadLine();
-						userData.TaskLengthLimit = StringValidator.ParseAndValidateInt(input, minTaskLength, maxTaskLength);
+            ITelegramBotClient botClient = new ConsoleBotClient();
+            botClient.StartReceiving(updateHandler);
 
-					}
-
-					var bot = new Bot(userData);
-					bot.Run();
-					break;
-				}
-				catch (ArgumentException ex)
-				{
-					Console.WriteLine($"Ошибка: {ex.Message}");
-					continue;
-				}
-				catch (TaskCountLimitException ex)
-				{
-					Console.WriteLine($"Ошибка: {ex.Message}");
-					continue;
-				}
-				catch (TaskLengthLimitException ex)
-				{
-					Console.WriteLine($"Ошибка: {ex.Message}");
-					continue;
-				}
-				catch (DuplicateTaskException ex)
-				{
-					Console.WriteLine($"Ошибка: {ex.Message}");
-					continue;
-				}
-				catch (Exception ex)
-				{
-					hasUnexpectedError = true;
-					Console.WriteLine($"Произошла непредвиденная ошибка: {ex.GetType().Name}");
-					Console.WriteLine($"Описание ошибки: {ex.Message}");
-					Console.WriteLine($"Трассировка стека:{Environment.NewLine}{ex.StackTrace}");
-					if (ex.InnerException != null)
-					{
-						Console.WriteLine($"Внутреннее исключение:{Environment.NewLine}{ex.InnerException.Message}");
-					}
-					break;
-				}
-			}
-
-			Console.WriteLine(hasUnexpectedError
-				? "Программа завершена с ошибкой."
-				: "Программа завершена успешно."
-				);
-			if (Environment.UserInteractive)
-			{
-				Console.WriteLine("Нажмите любую клавишу для выхода...");
-				Console.ReadKey(true);
-			}
-		}
-	}
+            Console.WriteLine("Программа завершена успешно.");
+            if (Environment.UserInteractive)
+            {
+                Console.WriteLine("Нажмите любую клавишу для выхода...");
+                Console.ReadKey(true);
+            }
+        }
+    }
 }

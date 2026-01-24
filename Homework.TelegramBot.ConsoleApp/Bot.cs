@@ -91,7 +91,7 @@ namespace Homework.TelegramBot.ConsoleApp
             Console.Write("Пожалуйста, введите ваше имя: ");
             string? input = Console.ReadLine();
             StringValidator.ValidateString(input);
-            _user = new ToDoUser(input!.Trim());
+            _user = new ToDoUser(0, input!.Trim());
             _userData.User = _user;
 
             Console.WriteLine($"Привет, {_user.TelegramUserName}!");
