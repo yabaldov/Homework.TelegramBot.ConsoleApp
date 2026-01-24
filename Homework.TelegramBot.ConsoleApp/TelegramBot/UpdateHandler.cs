@@ -11,11 +11,13 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
     {
         private readonly IUserService _userService;
         private readonly IToDoService _toDoService;
+        private readonly IToDoReportService _toDoReportService;
 
-        public UpdateHandler(IUserService userService, IToDoService toDoService)
+        public UpdateHandler(IUserService userService, IToDoService toDoService, IToDoReportService toDoReportService)
         {
             _userService = userService;
             _toDoService = toDoService;
+            _toDoReportService = toDoReportService;
         }
 
         public void HandleUpdateAsync(ITelegramBotClient botClient, Update update)
@@ -44,6 +46,9 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         break;
                     case "/showalltasks":
                         HandleShowAllTasks(botClient, chat, user);
+                        break;
+                    case "/report":
+                        HandleReport(botClient, chat, user);
                         break;
                     case string cmd when cmd.StartsWith("/addtask"):
                         HandleAddTask(botClient, chat, user, cmd);
@@ -79,7 +84,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var userName = from.Username ?? $"User_{from.Id}";
             var newUser = _userService.RegisterUser(from.Id, userName);
             botClient.SendMessage(chat, $"Привет, {newUser.TelegramUserName}!");
-            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /exit");
+            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /exit");
         }
 
         private void HandleHelp(ITelegramBotClient botClient, Chat chat, ToDoUser? user)
@@ -96,6 +101,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         "/showalltasks -- показать все задачи.\n" +
                         "/completetask <Id> -- завершить задачу по Id.\n" +
                         "/removetask <номер> -- удалить задачу по номеру.\n" +
+                        "/report -- статистика по задачам.\n" +
                         "/exit -- выйти из программы.";
             }
 
@@ -155,6 +161,22 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             }
 
             botClient.SendMessage(chat, message.TrimEnd());
+        }
+
+        private void HandleReport(ITelegramBotClient botClient, Chat chat, ToDoUser? user)
+        {
+            if (user == null)
+            {
+                botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.");
+                return;
+            }
+
+            var (total, completed, active, generatedAt) = _toDoReportService.GetUserStats(user.UserId);
+
+            var message = $"Статистика по задачам на {generatedAt:dd.MM.yyyy HH:mm:ss}. " +
+                          $"Всего: {total}; Завершенных: {completed}; Активных: {active};";
+
+            botClient.SendMessage(chat, message);
         }
 
         private void HandleAddTask(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command)

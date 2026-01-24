@@ -54,8 +54,9 @@ namespace Homework.TelegramBot.ConsoleApp
 
             var userService = new UserService(userRepository);
             var toDoService = new ToDoService(toDoRepository, tasksLimit, taskLengthLimit);
+            var toDoReportService = new ToDoReportService(toDoRepository);
 
-            var updateHandler = new UpdateHandler(userService, toDoService);
+            var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
 
             ITelegramBotClient botClient = new ConsoleBotClient();
             botClient.StartReceiving(updateHandler);
