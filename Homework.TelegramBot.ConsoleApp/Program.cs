@@ -50,8 +50,11 @@ namespace Homework.TelegramBot.ConsoleApp
             }
 
             var userRepository = new InMemoryUserRepository();
+            var toDoRepository = new InMemoryToDoRepository();
+
             var userService = new UserService(userRepository);
-            var toDoService = new ToDoService(tasksLimit, taskLengthLimit);
+            var toDoService = new ToDoService(toDoRepository, tasksLimit, taskLengthLimit);
+
             var updateHandler = new UpdateHandler(userService, toDoService);
 
             ITelegramBotClient botClient = new ConsoleBotClient();
