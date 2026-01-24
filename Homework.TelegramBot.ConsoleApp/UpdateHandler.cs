@@ -52,6 +52,9 @@ namespace Homework.TelegramBot.ConsoleApp
                     case string cmd when cmd.StartsWith("/completetask"):
                         HandleCompleteTask(botClient, chat, user, cmd);
                         break;
+                    case "/exit":
+                        HandleExit(botClient, chat);
+                        break;
                     default:
                         botClient.SendMessage(chat, "Неизвестная команда. Введите /help для списка доступных команд.");
                         break;
@@ -74,7 +77,7 @@ namespace Homework.TelegramBot.ConsoleApp
             var userName = from.Username ?? $"User_{from.Id}";
             var newUser = _userService.RegisterUser(from.Id, userName);
             botClient.SendMessage(chat, $"Привет, {newUser.TelegramUserName}!");
-            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask");
+            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /exit");
         }
 
         private void HandleHelp(ITelegramBotClient botClient, Chat chat, ToDoUser? user)
@@ -90,7 +93,8 @@ namespace Homework.TelegramBot.ConsoleApp
                         "/showtasks -- показать активные задачи.\n" +
                         "/showalltasks -- показать все задачи.\n" +
                         "/completetask <Id> -- завершить задачу по Id.\n" +
-                        "/removetask <номер> -- удалить задачу по номеру.";
+                        "/removetask <номер> -- удалить задачу по номеру.\n" +
+                        "/exit -- выйти из программы.";
             }
 
             botClient.SendMessage(chat, help);
@@ -252,5 +256,12 @@ namespace Homework.TelegramBot.ConsoleApp
             _toDoService.MarkCompleted(taskId);
             botClient.SendMessage(chat, $"Задача \"{task.Name}\" завершена.");
         }
+    
+        private void HandleExit(ITelegramBotClient botClient, Chat chat)
+        {
+            botClient.SendMessage(chat, "Программа завершена.");
+            Environment.Exit(0);
+        }
+    
     }
 }
