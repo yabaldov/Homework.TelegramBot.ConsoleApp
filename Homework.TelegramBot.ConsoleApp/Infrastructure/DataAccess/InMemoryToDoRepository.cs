@@ -54,5 +54,10 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
         {
             return _items.Count(t => t.User.UserId == userId && t.State == ToDoItemState.Active);
         }
+
+        public IReadOnlyList<ToDoItem> Find(Guid userId, Func<ToDoItem, bool> predicate)
+        {
+            return _items.Where(t => t.User.UserId == userId && predicate(t)).ToList();
+        }
     }
 }

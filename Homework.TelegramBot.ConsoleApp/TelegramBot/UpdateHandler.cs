@@ -59,6 +59,9 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                     case string cmd when cmd.StartsWith("/completetask"):
                         HandleCompleteTask(botClient, chat, user, cmd);
                         break;
+                    case string cmd when cmd.StartsWith("/find"):
+                        HandleFind(botClient, chat, user, cmd);
+                        break;
                     case "/exit":
                         HandleExit(botClient, chat);
                         break;
@@ -84,7 +87,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var userName = from.Username ?? $"User_{from.Id}";
             var newUser = _userService.RegisterUser(from.Id, userName);
             botClient.SendMessage(chat, $"Привет, {newUser.TelegramUserName}!");
-            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /exit");
+            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /find, /exit");
         }
 
         private void HandleHelp(ITelegramBotClient botClient, Chat chat, ToDoUser? user)
@@ -102,6 +105,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         "/completetask <Id> -- завершить задачу по Id.\n" +
                         "/removetask <номер> -- удалить задачу по номеру.\n" +
                         "/report -- статистика по задачам.\n" +
+                        "/find <префикс> -- найти задачи по началу названия.\n" +
                         "/exit -- выйти из программы.";
             }
 
@@ -177,6 +181,39 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                           $"Всего: {total}; Завершенных: {completed}; Активных: {active};";
 
             botClient.SendMessage(chat, message);
+        }
+
+        private void HandleFind(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command)
+        {
+            if (user == null)
+            {
+                botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.");
+                return;
+            }
+
+            var namePrefix = command.Length > 5 ? command.Substring(5).Trim() : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(namePrefix))
+            {
+                botClient.SendMessage(chat, "Пожалуйста, укажите начало названия задачи. Пример: /find Купить");
+                return;
+            }
+
+            var tasks = _toDoService.Find(user, namePrefix);
+
+            if (tasks.Count == 0)
+            {
+                botClient.SendMessage(chat, $"Задачи, начинающиеся с \"{namePrefix}\", не найдены.");
+                return;
+            }
+
+            var message = "Найденные задачи:\n";
+            foreach (var task in tasks)
+            {
+                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}\n";
+            }
+
+            botClient.SendMessage(chat, message.TrimEnd());
         }
 
         private void HandleAddTask(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command)

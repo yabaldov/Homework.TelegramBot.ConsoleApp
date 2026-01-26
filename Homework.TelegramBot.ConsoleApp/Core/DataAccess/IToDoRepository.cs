@@ -14,5 +14,6 @@ namespace Homework.TelegramBot.ConsoleApp.Core.DataAccess
         void Delete(Guid id);
         bool ExistsByName(Guid userId, string name);
         int CountActive(Guid userId);
+        IReadOnlyList<ToDoItem> Find(Guid userId, Func<ToDoItem, bool> predicate);
     }
 }

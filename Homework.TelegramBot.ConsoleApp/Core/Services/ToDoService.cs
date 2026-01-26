@@ -66,5 +66,10 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
         {
             _toDoRepository.Delete(id);
         }
+
+        public IReadOnlyList<ToDoItem> Find(ToDoUser user, string namePrefix)
+        {
+            return _toDoRepository.Find(user.UserId, item => item.Name.StartsWith(namePrefix));
+        }
     }
 }
