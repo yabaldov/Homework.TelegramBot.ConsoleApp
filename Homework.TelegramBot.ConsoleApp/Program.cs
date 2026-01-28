@@ -67,10 +67,31 @@ namespace Homework.TelegramBot.ConsoleApp
 
             var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
 
-            ITelegramBotClient botClient = new ConsoleBotClient();
-            botClient.StartReceiving(updateHandler, cts.Token);
+            updateHandler.OnHandleUpdateStarted += OnUpdateStarted;
+            updateHandler.OnHandleUpdateCompleted += OnUpdateCompleted;
+
+            try
+            {
+                ITelegramBotClient botClient = new ConsoleBotClient();
+                botClient.StartReceiving(updateHandler, cts.Token);
+            }
+            finally
+            {
+                updateHandler.OnHandleUpdateStarted -= OnUpdateStarted;
+                updateHandler.OnHandleUpdateCompleted -= OnUpdateCompleted;
+            }
 
             Console.WriteLine("Программа завершена.");
+        }
+
+        private static void OnUpdateStarted(string message)
+        {
+            Console.WriteLine($"Началась обработка сообщения '{message}'");
+        }
+
+        private static void OnUpdateCompleted(string message)
+        {
+            Console.WriteLine($"Закончилась обработка сообщения '{message}'");
         }
     }
 }

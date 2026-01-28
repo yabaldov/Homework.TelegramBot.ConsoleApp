@@ -15,6 +15,9 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         private readonly IToDoService _toDoService;
         private readonly IToDoReportService _toDoReportService;
 
+        public event MessageEventHandler? OnHandleUpdateStarted;
+        public event MessageEventHandler? OnHandleUpdateCompleted;
+
         public UpdateHandler(IUserService userService, IToDoService toDoService, IToDoReportService toDoReportService)
         {
             _userService = userService;
@@ -28,6 +31,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var from = update.Message.From;
             var text = update.Message.Text?.Trim() ?? string.Empty;
 
+            OnHandleUpdateStarted?.Invoke(text);
             try
             {
                 var user = _userService.GetUser(from.Id);
@@ -75,6 +79,10 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             catch (Exception ex)
             {
                 await botClient.SendMessage(chat, $"Ошибка: {ex.Message}", ct);
+            }
+            finally
+            {
+                OnHandleUpdateCompleted?.Invoke(text);
             }
         }
 
