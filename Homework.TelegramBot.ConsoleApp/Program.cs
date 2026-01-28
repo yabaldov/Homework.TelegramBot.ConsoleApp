@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Otus.ToDoList.ConsoleBot;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
 using Homework.TelegramBot.ConsoleApp.Core.Validation;
@@ -11,6 +12,14 @@ namespace Homework.TelegramBot.ConsoleApp
     {
         static void Main(string[] args)
         {
+            using var cts = new CancellationTokenSource();
+
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+                Console.WriteLine("\nЗавершение работы бота...");
+            };
             const int minTasksLimit = 1;
             const int maxTasksLimit = 100;
             const int minTaskLength = 1;
@@ -59,14 +68,9 @@ namespace Homework.TelegramBot.ConsoleApp
             var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
 
             ITelegramBotClient botClient = new ConsoleBotClient();
-            botClient.StartReceiving(updateHandler);
+            botClient.StartReceiving(updateHandler, cts.Token);
 
-            Console.WriteLine("Программа завершена успешно.");
-            if (Environment.UserInteractive)
-            {
-                Console.WriteLine("Нажмите любую клавишу для выхода...");
-                Console.ReadKey(true);
-            }
+            Console.WriteLine("Программа завершена.");
         }
     }
 }
