@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 
@@ -10,54 +12,63 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
     {
         private readonly List<ToDoItem> _items = new();
 
-        public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
+        public Task<IReadOnlyList<ToDoItem>> GetAllByUserIdAsync(Guid userId, CancellationToken ct)
         {
-            return _items.Where(t => t.User.UserId == userId).ToList();
+            var result = _items.Where(t => t.User.UserId == userId).ToList();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
         }
 
-        public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
+        public Task<IReadOnlyList<ToDoItem>> GetActiveByUserIdAsync(Guid userId, CancellationToken ct)
         {
-            return _items.Where(t => t.User.UserId == userId && t.State == ToDoItemState.Active).ToList();
+            var result = _items.Where(t => t.User.UserId == userId && t.State == ToDoItemState.Active).ToList();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
         }
 
-        public ToDoItem? Get(Guid id)
+        public Task<ToDoItem?> GetAsync(Guid id, CancellationToken ct)
         {
-            return _items.FirstOrDefault(t => t.Id == id);
+            var item = _items.FirstOrDefault(t => t.Id == id);
+            return Task.FromResult(item);
         }
 
-        public void Add(ToDoItem item)
+        public Task AddAsync(ToDoItem item, CancellationToken ct)
         {
             _items.Add(item);
+            return Task.CompletedTask;
         }
 
-        public void Update(ToDoItem item)
+        public Task UpdateAsync(ToDoItem item, CancellationToken ct)
         {
             // В in-memory реализации объект уже обновлён по ссылке,
             // но метод нужен для совместимости с интерфейсом
+            return Task.CompletedTask;
         }
 
-        public void Delete(Guid id)
+        public Task DeleteAsync(Guid id, CancellationToken ct)
         {
             var item = _items.FirstOrDefault(t => t.Id == id);
             if (item != null)
             {
                 _items.Remove(item);
             }
+            return Task.CompletedTask;
         }
 
-        public bool ExistsByName(Guid userId, string name)
+        public Task<bool> ExistsByNameAsync(Guid userId, string name, CancellationToken ct)
         {
-            return _items.Any(t => t.User.UserId == userId && t.Name == name);
+            var exists = _items.Any(t => t.User.UserId == userId && t.Name == name);
+            return Task.FromResult(exists);
         }
 
-        public int CountActive(Guid userId)
+        public Task<int> CountActiveAsync(Guid userId, CancellationToken ct)
         {
-            return _items.Count(t => t.User.UserId == userId && t.State == ToDoItemState.Active);
+            var count = _items.Count(t => t.User.UserId == userId && t.State == ToDoItemState.Active);
+            return Task.FromResult(count);
         }
 
-        public IReadOnlyList<ToDoItem> Find(Guid userId, Func<ToDoItem, bool> predicate)
+        public Task<IReadOnlyList<ToDoItem>> FindAsync(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken ct)
         {
-            return _items.Where(t => t.User.UserId == userId && predicate(t)).ToList();
+            var result = _items.Where(t => t.User.UserId == userId && predicate(t)).ToList();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
         }
     }
 }

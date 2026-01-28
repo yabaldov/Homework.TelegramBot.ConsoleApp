@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 
@@ -12,16 +14,16 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
             _userRepository = userRepository;
         }
 
-        public ToDoUser RegisterUser(long telegramUserId, string telegramUserName)
+        public async Task<ToDoUser> RegisterUserAsync(long telegramUserId, string telegramUserName, CancellationToken ct)
         {
             var user = new ToDoUser(telegramUserId, telegramUserName);
-            _userRepository.Add(user);
+            await _userRepository.AddAsync(user, ct);
             return user;
         }
 
-        public ToDoUser? GetUser(long telegramUserId)
+        public Task<ToDoUser?> GetUserAsync(long telegramUserId, CancellationToken ct)
         {
-            return _userRepository.GetUserByTelegramUserId(telegramUserId);
+            return _userRepository.GetUserByTelegramUserIdAsync(telegramUserId, ct);
         }
     }
 }

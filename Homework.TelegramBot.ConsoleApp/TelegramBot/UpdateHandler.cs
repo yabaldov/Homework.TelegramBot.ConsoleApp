@@ -34,7 +34,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             OnHandleUpdateStarted?.Invoke(text);
             try
             {
-                var user = _userService.GetUser(from.Id);
+                var user = await _userService.GetUserAsync(from.Id, ct);
 
                 switch (text)
                 {
@@ -101,7 +101,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             }
 
             var userName = from.Username ?? $"User_{from.Id}";
-            var newUser = _userService.RegisterUser(from.Id, userName);
+            var newUser = await _userService.RegisterUserAsync(from.Id, userName, ct);
             await botClient.SendMessage(chat, $"Привет, {newUser.TelegramUserName}!", ct);
             await botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /find, /exit", ct);
         }
@@ -141,7 +141,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var tasks = _toDoService.GetActiveByUserId(user.UserId);
+            var tasks = await _toDoService.GetActiveByUserIdAsync(user.UserId, ct);
 
             if (tasks.Count == 0)
             {
@@ -166,7 +166,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var tasks = _toDoService.GetAllByUserId(user.UserId);
+            var tasks = await _toDoService.GetAllByUserIdAsync(user.UserId, ct);
 
             if (tasks.Count == 0)
             {
@@ -191,7 +191,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var (total, completed, active, generatedAt) = _toDoReportService.GetUserStats(user.UserId);
+            var (total, completed, active, generatedAt) = await _toDoReportService.GetUserStatsAsync(user.UserId, ct);
 
             var message = $"Статистика по задачам на {generatedAt:dd.MM.yyyy HH:mm:ss}. " +
                           $"Всего: {total}; Завершенных: {completed}; Активных: {active};";
@@ -215,7 +215,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var tasks = _toDoService.Find(user, namePrefix);
+            var tasks = await _toDoService.FindAsync(user, namePrefix, ct);
 
             if (tasks.Count == 0)
             {
@@ -248,7 +248,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var task = _toDoService.Add(user, taskName);
+            var task = await _toDoService.AddAsync(user, taskName, ct);
             await botClient.SendMessage(chat, $"Задача \"{task.Name}\" добавлена.", ct);
         }
 
@@ -264,7 +264,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (string.IsNullOrWhiteSpace(numberPart))
             {
-                var tasks = _toDoService.GetAllByUserId(user.UserId);
+                var tasks = await _toDoService.GetAllByUserIdAsync(user.UserId, ct);
                 if (tasks.Count == 0)
                 {
                     await botClient.SendMessage(chat, "Список задач пуст. Удаление невозможно.", ct);
@@ -286,7 +286,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var allTasks = _toDoService.GetAllByUserId(user.UserId);
+            var allTasks = await _toDoService.GetAllByUserIdAsync(user.UserId, ct);
 
             if (taskNumber < 1 || taskNumber > allTasks.Count)
             {
@@ -295,7 +295,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             }
 
             var taskToRemove = allTasks[taskNumber - 1];
-            _toDoService.Delete(taskToRemove.Id);
+            await _toDoService.DeleteAsync(taskToRemove.Id, ct);
             await botClient.SendMessage(chat, $"Задача \"{taskToRemove.Name}\" удалена.", ct);
         }
 
@@ -321,7 +321,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var tasks = _toDoService.GetAllByUserId(user.UserId);
+            var tasks = await _toDoService.GetAllByUserIdAsync(user.UserId, ct);
             var task = tasks.FirstOrDefault(t => t.Id == taskId);
 
             if (task == null)
@@ -330,7 +330,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            _toDoService.MarkCompleted(taskId);
+            await _toDoService.MarkCompletedAsync(taskId, ct);
             await botClient.SendMessage(chat, $"Задача \"{task.Name}\" завершена.", ct);
         }
 
