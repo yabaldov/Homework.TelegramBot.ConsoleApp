@@ -1,6 +1,10 @@
 using System;
 using System.Threading;
-using Otus.ToDoList.ConsoleBot;
+using System.Threading.Tasks;
+using Telegram.Bot;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
 using Homework.TelegramBot.ConsoleApp.Core.Validation;
 using Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess;
@@ -10,8 +14,11 @@ namespace Homework.TelegramBot.ConsoleApp
 {
     public static class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
+            var token = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN")
+                ?? throw new InvalidOperationException("Не задана переменная окружения TELEGRAM_BOT_TOKEN");
+
             using var cts = new CancellationTokenSource();
 
             Console.CancelKeyPress += (sender, e) =>
@@ -20,12 +27,13 @@ namespace Homework.TelegramBot.ConsoleApp
                 cts.Cancel();
                 Console.WriteLine("\nЗавершение работы бота...");
             };
+
             const int minTasksLimit = 1;
             const int maxTasksLimit = 100;
             const int minTaskLength = 1;
             const int maxTaskLength = 100;
 
-            Console.WriteLine($"Добро пожаловать в симулятор бота Телеграм!{Environment.NewLine}");
+            Console.WriteLine($"Добро пожаловать в Telegram ToDo Bot!{Environment.NewLine}");
 
             int tasksLimit = 0;
             int taskLengthLimit = 0;
@@ -67,31 +75,51 @@ namespace Homework.TelegramBot.ConsoleApp
 
             var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
 
-            updateHandler.OnHandleUpdateStarted += OnUpdateStarted;
-            updateHandler.OnHandleUpdateCompleted += OnUpdateCompleted;
+            var botClient = new TelegramBotClient(token);
 
-            try
+            var receiverOptions = new ReceiverOptions
             {
-                ITelegramBotClient botClient = new ConsoleBotClient();
-                botClient.StartReceiving(updateHandler, cts.Token);
-            }
-            finally
+                AllowedUpdates = new[] { UpdateType.Message },
+                DropPendingUpdates = true
+            };
+
+            await botClient.SetMyCommands(new[]
             {
-                updateHandler.OnHandleUpdateStarted -= OnUpdateStarted;
-                updateHandler.OnHandleUpdateCompleted -= OnUpdateCompleted;
+                new BotCommand { Command = "start", Description = "Регистрация" },
+                new BotCommand { Command = "help", Description = "Список команд" },
+                new BotCommand { Command = "info", Description = "Информация о боте" },
+                new BotCommand { Command = "addtask", Description = "Добавить задачу" },
+                new BotCommand { Command = "showtasks", Description = "Показать активные задачи" },
+                new BotCommand { Command = "showalltasks", Description = "Показать все задачи" },
+                new BotCommand { Command = "removetask", Description = "Удалить задачу" },
+                new BotCommand { Command = "completetask", Description = "Завершить задачу" },
+                new BotCommand { Command = "find", Description = "Найти задачу по началу названия" },
+                new BotCommand { Command = "report", Description = "Статистика" }
+            }, cancellationToken: cts.Token);
+
+            botClient.StartReceiving(updateHandler, receiverOptions, cts.Token);
+
+            var me = await botClient.GetMe(cts.Token);
+            Console.WriteLine($"{me.FirstName} (@{me.Username}) запущен!");
+            Console.WriteLine();
+            Console.WriteLine("Нажмите клавишу \"A\" для выхода");
+
+            while (!cts.Token.IsCancellationRequested)
+            {
+                var key = Console.ReadKey(true);
+                if (key.Key == ConsoleKey.A)
+                {
+                    cts.Cancel();
+                    break;
+                }
+                else
+                {
+                    var botInfo = await botClient.GetMe(cts.Token);
+                    Console.WriteLine($"Бот: {botInfo.FirstName} (@{botInfo.Username}), Id: {botInfo.Id}");
+                }
             }
 
             Console.WriteLine("Программа завершена.");
-        }
-
-        private static void OnUpdateStarted(string message)
-        {
-            Console.WriteLine($"Началась обработка сообщения '{message}'");
-        }
-
-        private static void OnUpdateCompleted(string message)
-        {
-            Console.WriteLine($"Закончилась обработка сообщения '{message}'");
         }
     }
 }
