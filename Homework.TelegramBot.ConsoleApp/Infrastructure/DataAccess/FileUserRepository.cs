@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +18,11 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
         public FileUserRepository(string basePath)
         {
             _basePath = basePath;
-            _jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            _jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
 
             if (!Directory.Exists(_basePath))
             {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +23,11 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
         {
             _basePath = basePath;
             _userRepository = userRepository;
-            _jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            _jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
             _index = new Dictionary<Guid, Guid>();
 
             if (!Directory.Exists(_basePath))
