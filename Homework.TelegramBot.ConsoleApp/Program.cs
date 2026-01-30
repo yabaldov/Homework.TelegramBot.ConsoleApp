@@ -75,6 +75,10 @@ namespace Homework.TelegramBot.ConsoleApp
                 ITelegramBotClient botClient = new ConsoleBotClient();
                 botClient.StartReceiving(updateHandler, cts.Token);
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при работе бота: {ex.Message}");
+            }
             finally
             {
                 updateHandler.OnHandleUpdateStarted -= OnUpdateStarted;
