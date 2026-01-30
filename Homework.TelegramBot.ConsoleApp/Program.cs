@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Otus.ToDoList.ConsoleBot;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
 using Homework.TelegramBot.ConsoleApp.Core.Validation;
@@ -11,6 +12,14 @@ namespace Homework.TelegramBot.ConsoleApp
     {
         static void Main(string[] args)
         {
+            using var cts = new CancellationTokenSource();
+
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+                Console.WriteLine("\nЗавершение работы бота...");
+            };
             const int minTasksLimit = 1;
             const int maxTasksLimit = 100;
             const int minTaskLength = 1;
@@ -58,15 +67,35 @@ namespace Homework.TelegramBot.ConsoleApp
 
             var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
 
-            ITelegramBotClient botClient = new ConsoleBotClient();
-            botClient.StartReceiving(updateHandler);
+            updateHandler.OnHandleUpdateStarted += OnUpdateStarted;
+            updateHandler.OnHandleUpdateCompleted += OnUpdateCompleted;
 
-            Console.WriteLine("Программа завершена успешно.");
-            if (Environment.UserInteractive)
+            try
             {
-                Console.WriteLine("Нажмите любую клавишу для выхода...");
-                Console.ReadKey(true);
+                ITelegramBotClient botClient = new ConsoleBotClient();
+                botClient.StartReceiving(updateHandler, cts.Token);
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при работе бота: {ex.Message}");
+            }
+            finally
+            {
+                updateHandler.OnHandleUpdateStarted -= OnUpdateStarted;
+                updateHandler.OnHandleUpdateCompleted -= OnUpdateCompleted;
+            }
+
+            Console.WriteLine("Программа завершена.");
+        }
+
+        private static void OnUpdateStarted(string message)
+        {
+            Console.WriteLine($"Началась обработка сообщения '{message}'");
+        }
+
+        private static void OnUpdateCompleted(string message)
+        {
+            Console.WriteLine($"Закончилась обработка сообщения '{message}'");
         }
     }
 }

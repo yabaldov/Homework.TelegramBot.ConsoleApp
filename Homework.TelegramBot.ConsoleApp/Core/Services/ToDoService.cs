@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 using Homework.TelegramBot.ConsoleApp.Core.Exceptions;
@@ -19,19 +21,19 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
             _taskLengthLimit = taskLengthLimit;
         }
 
-        public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
+        public Task<IReadOnlyList<ToDoItem>> GetAllByUserIdAsync(Guid userId, CancellationToken ct)
         {
-            return _toDoRepository.GetAllByUserId(userId);
+            return _toDoRepository.GetAllByUserIdAsync(userId, ct);
         }
 
-        public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
+        public Task<IReadOnlyList<ToDoItem>> GetActiveByUserIdAsync(Guid userId, CancellationToken ct)
         {
-            return _toDoRepository.GetActiveByUserId(userId);
+            return _toDoRepository.GetActiveByUserIdAsync(userId, ct);
         }
 
-        public ToDoItem Add(ToDoUser user, string name)
+        public async Task<ToDoItem> AddAsync(ToDoUser user, string name, CancellationToken ct)
         {
-            if (_toDoRepository.CountActive(user.UserId) >= _taskCountLimit)
+            if (await _toDoRepository.CountActiveAsync(user.UserId, ct) >= _taskCountLimit)
             {
                 throw new TaskCountLimitException(_taskCountLimit);
             }
@@ -41,35 +43,35 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
                 throw new TaskLengthLimitException(name.Length, _taskLengthLimit);
             }
 
-            if (_toDoRepository.ExistsByName(user.UserId, name))
+            if (await _toDoRepository.ExistsByNameAsync(user.UserId, name, ct))
             {
                 throw new DuplicateTaskException(name);
             }
 
             var task = new ToDoItem(user, name);
-            _toDoRepository.Add(task);
+            await _toDoRepository.AddAsync(task, ct);
             return task;
         }
 
-        public void MarkCompleted(Guid id)
+        public async Task MarkCompletedAsync(Guid id, CancellationToken ct)
         {
-            var task = _toDoRepository.Get(id);
+            var task = await _toDoRepository.GetAsync(id, ct);
             if (task != null)
             {
                 task.State = ToDoItemState.Completed;
                 task.StateChangedAt = DateTime.UtcNow;
-                _toDoRepository.Update(task);
+                await _toDoRepository.UpdateAsync(task, ct);
             }
         }
 
-        public void Delete(Guid id)
+        public Task DeleteAsync(Guid id, CancellationToken ct)
         {
-            _toDoRepository.Delete(id);
+            return _toDoRepository.DeleteAsync(id, ct);
         }
 
-        public IReadOnlyList<ToDoItem> Find(ToDoUser user, string namePrefix)
+        public Task<IReadOnlyList<ToDoItem>> FindAsync(ToDoUser user, string namePrefix, CancellationToken ct)
         {
-            return _toDoRepository.Find(user.UserId, item => item.Name.StartsWith(namePrefix));
+            return _toDoRepository.FindAsync(user.UserId, item => item.Name.StartsWith(namePrefix), ct);
         }
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 
@@ -14,9 +16,9 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
             _toDoRepository = toDoRepository;
         }
 
-        public (int total, int completed, int active, DateTime generatedAt) GetUserStats(Guid userId)
+        public async Task<(int total, int completed, int active, DateTime generatedAt)> GetUserStatsAsync(Guid userId, CancellationToken ct)
         {
-            var allTasks = _toDoRepository.GetAllByUserId(userId);
+            var allTasks = await _toDoRepository.GetAllByUserIdAsync(userId, ct);
 
             int total = allTasks.Count;
             int completed = allTasks.Count(t => t.State == ToDoItemState.Completed);

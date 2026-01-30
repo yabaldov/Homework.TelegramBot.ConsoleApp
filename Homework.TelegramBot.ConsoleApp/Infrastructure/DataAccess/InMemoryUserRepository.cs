@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 
@@ -10,19 +12,22 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
     {
         private readonly List<ToDoUser> _users = new();
 
-        public ToDoUser? GetUser(Guid userId)
+        public Task<ToDoUser?> GetUserAsync(Guid userId, CancellationToken ct)
         {
-            return _users.FirstOrDefault(u => u.UserId == userId);
+            var user = _users.FirstOrDefault(u => u.UserId == userId);
+            return Task.FromResult(user);
         }
 
-        public ToDoUser? GetUserByTelegramUserId(long telegramUserId)
+        public Task<ToDoUser?> GetUserByTelegramUserIdAsync(long telegramUserId, CancellationToken ct)
         {
-            return _users.FirstOrDefault(u => u.TelegramUserId == telegramUserId);
+            var user = _users.FirstOrDefault(u => u.TelegramUserId == telegramUserId);
+            return Task.FromResult(user);
         }
 
-        public void Add(ToDoUser user)
+        public Task AddAsync(ToDoUser user, CancellationToken ct)
         {
             _users.Add(user);
+            return Task.CompletedTask;
         }
     }
 }
