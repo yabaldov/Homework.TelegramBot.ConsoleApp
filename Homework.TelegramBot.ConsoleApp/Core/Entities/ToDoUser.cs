@@ -16,5 +16,14 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Entities
             TelegramUserName = telegramUserName;
             RegisteredAt = DateTime.UtcNow;
         }
+
+        // Конструктор для восстановления из файла
+        public ToDoUser(Guid userId, long telegramUserId, string telegramUserName, DateTime registeredAt)
+        {
+            UserId = userId;
+            TelegramUserId = telegramUserId;
+            TelegramUserName = telegramUserName;
+            RegisteredAt = registeredAt;
+        }
     }
 }

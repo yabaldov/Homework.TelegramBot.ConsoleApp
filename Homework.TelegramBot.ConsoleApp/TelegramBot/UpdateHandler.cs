@@ -2,8 +2,11 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Otus.ToDoList.ConsoleBot;
-using Otus.ToDoList.ConsoleBot.Types;
+using Telegram.Bot;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
 
@@ -15,9 +18,6 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         private readonly IToDoService _toDoService;
         private readonly IToDoReportService _toDoReportService;
 
-        public event MessageEventHandler? OnHandleUpdateStarted;
-        public event MessageEventHandler? OnHandleUpdateCompleted;
-
         public UpdateHandler(IUserService userService, IToDoService toDoService, IToDoReportService toDoReportService)
         {
             _userService = userService;
@@ -27,11 +27,16 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken ct)
         {
-            var chat = update.Message.Chat;
-            var from = update.Message.From;
-            var text = update.Message.Text?.Trim() ?? string.Empty;
+            if (update.Message is not { } message)
+                return;
 
-            OnHandleUpdateStarted?.Invoke(text);
+            var chat = message.Chat;
+            var from = message.From;
+            var text = message.Text?.Trim() ?? string.Empty;
+
+            if (from == null)
+                return;
+
             try
             {
                 var user = await _userService.GetUserAsync(from.Id, ct);
@@ -45,7 +50,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         await HandleHelpAsync(botClient, chat, user, ct);
                         break;
                     case "/info":
-                        await HandleInfoAsync(botClient, chat, ct);
+                        await HandleInfoAsync(botClient, chat, user, ct);
                         break;
                     case "/showtasks":
                         await HandleShowTasksAsync(botClient, chat, user, ct);
@@ -69,26 +74,22 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         await HandleFindAsync(botClient, chat, user, cmd, ct);
                         break;
                     case "/exit":
-                        await HandleExitAsync(botClient, chat, ct);
+                        await HandleExitAsync(botClient, chat, user, ct);
                         break;
                     default:
-                        await botClient.SendMessage(chat, "Неизвестная команда. Введите /help для списка доступных команд.", ct);
+                        await SendMessageAsync(botClient, chat, "Неизвестная команда. Введите /help для списка доступных команд.", user != null, ct);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                await botClient.SendMessage(chat, $"Ошибка: {ex.Message}", ct);
-            }
-            finally
-            {
-                OnHandleUpdateCompleted?.Invoke(text);
+                await botClient.SendMessage(chat.Id, $"Ошибка: {ex.Message}", cancellationToken: ct);
             }
         }
 
-        public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken ct)
+        public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken ct)
         {
-            Console.WriteLine($"Ошибка обработки: {exception.GetType().Name}: {exception.Message}");
+            Console.WriteLine($"Ошибка обработки ({source}): {exception.GetType().Name}: {exception.Message}");
             return Task.CompletedTask;
         }
 
@@ -96,14 +97,15 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         {
             if (user != null)
             {
-                await botClient.SendMessage(chat, $"Вы уже зарегистрированы как {user.TelegramUserName}.", ct);
+                var firstName = from.FirstName ?? user.TelegramUserName;
+                await SendMessageAsync(botClient, chat, $"Вы уже зарегистрированы как {firstName}.", true, ct);
                 return;
             }
 
             var userName = from.Username ?? $"User_{from.Id}";
             var newUser = await _userService.RegisterUserAsync(from.Id, userName, ct);
-            await botClient.SendMessage(chat, $"Привет, {newUser.TelegramUserName}!", ct);
-            await botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /find, /exit", ct);
+            var greeting = from.FirstName ?? newUser.TelegramUserName;
+            await SendMessageAsync(botClient, chat, $"Привет, {greeting}!\nТеперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /find, /exit", true, ct);
         }
 
         private async Task HandleHelpAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
@@ -125,19 +127,19 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         "/exit -- выйти из программы.";
             }
 
-            await botClient.SendMessage(chat, help, ct);
+            await SendMessageAsync(botClient, chat, help, user != null, ct);
         }
 
-        private async Task HandleInfoAsync(ITelegramBotClient botClient, Chat chat, CancellationToken ct)
+        private async Task HandleInfoAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
-            await botClient.SendMessage(chat, "Программа: Симулятор бота Телеграм.\nВерсия: 0.0.4\nДата создания: 2025-08-22", ct);
+            await SendMessageAsync(botClient, chat, "Программа: Telegram ToDo Bot.\nВерсия: 1.0.0\nДата создания: 2026-01-29", user != null, ct);
         }
 
         private async Task HandleShowTasksAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -145,24 +147,24 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (tasks.Count == 0)
             {
-                await botClient.SendMessage(chat, "Список задач пуст.", ct);
+                await SendMessageAsync(botClient, chat, "Список задач пуст.", true, ct);
                 return;
             }
 
             var message = "Ваши задачи:\n";
             foreach (var task in tasks)
             {
-                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}\n";
+                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{task.Id}`\n";
             }
 
-            await botClient.SendMessage(chat, message.TrimEnd(), ct);
+            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
         }
 
         private async Task HandleShowAllTasksAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -170,24 +172,24 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (tasks.Count == 0)
             {
-                await botClient.SendMessage(chat, "Список задач пуст.", ct);
+                await SendMessageAsync(botClient, chat, "Список задач пуст.", true, ct);
                 return;
             }
 
             var message = "Все задачи:\n";
             foreach (var task in tasks)
             {
-                message += $"({task.State}) {task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}\n";
+                message += $"({task.State}) {task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{task.Id}`\n";
             }
 
-            await botClient.SendMessage(chat, message.TrimEnd(), ct);
+            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
         }
 
         private async Task HandleReportAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -196,14 +198,14 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var message = $"Статистика по задачам на {generatedAt:dd.MM.yyyy HH:mm:ss}. " +
                           $"Всего: {total}; Завершенных: {completed}; Активных: {active};";
 
-            await botClient.SendMessage(chat, message, ct);
+            await SendMessageAsync(botClient, chat, message, true, ct);
         }
 
         private async Task HandleFindAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -211,7 +213,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (string.IsNullOrWhiteSpace(namePrefix))
             {
-                await botClient.SendMessage(chat, "Пожалуйста, укажите начало названия задачи. Пример: /find Купить", ct);
+                await SendMessageAsync(botClient, chat, "Пожалуйста, укажите начало названия задачи. Пример: /find Купить", true, ct);
                 return;
             }
 
@@ -219,24 +221,24 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (tasks.Count == 0)
             {
-                await botClient.SendMessage(chat, $"Задачи, начинающиеся с \"{namePrefix}\", не найдены.", ct);
+                await SendMessageAsync(botClient, chat, $"Задачи, начинающиеся с \"{namePrefix}\", не найдены.", true, ct);
                 return;
             }
 
             var message = "Найденные задачи:\n";
             foreach (var task in tasks)
             {
-                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}\n";
+                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{task.Id}`\n";
             }
 
-            await botClient.SendMessage(chat, message.TrimEnd(), ct);
+            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
         }
 
         private async Task HandleAddTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -244,19 +246,19 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (string.IsNullOrWhiteSpace(taskName))
             {
-                await botClient.SendMessage(chat, "Пожалуйста, укажите название задачи. Пример: /addtask Купить молоко", ct);
+                await SendMessageAsync(botClient, chat, "Пожалуйста, укажите название задачи. Пример: /addtask Купить колбасы", true, ct);
                 return;
             }
 
             var task = await _toDoService.AddAsync(user, taskName, ct);
-            await botClient.SendMessage(chat, $"Задача \"{task.Name}\" добавлена.", ct);
+            await SendMessageAsync(botClient, chat, $"Задача \"{task.Name}\" добавлена.", true, ct);
         }
 
         private async Task HandleRemoveTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -267,7 +269,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 var tasks = await _toDoService.GetAllByUserIdAsync(user.UserId, ct);
                 if (tasks.Count == 0)
                 {
-                    await botClient.SendMessage(chat, "Список задач пуст. Удаление невозможно.", ct);
+                    await SendMessageAsync(botClient, chat, "Список задач пуст. Удаление невозможно.", true, ct);
                     return;
                 }
 
@@ -276,13 +278,13 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 {
                     message += $"{i + 1}. {tasks[i].Name}\n";
                 }
-                await botClient.SendMessage(chat, message.TrimEnd(), ct);
+                await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
                 return;
             }
 
             if (!int.TryParse(numberPart, out int taskNumber))
             {
-                await botClient.SendMessage(chat, "Неверный формат номера задачи. Пример: /removetask 1", ct);
+                await SendMessageAsync(botClient, chat, "Неверный формат номера задачи. Пример: /removetask 1", true, ct);
                 return;
             }
 
@@ -290,20 +292,20 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (taskNumber < 1 || taskNumber > allTasks.Count)
             {
-                await botClient.SendMessage(chat, $"Неверный номер задачи. Доступные номера: 1-{allTasks.Count}", ct);
+                await SendMessageAsync(botClient, chat, $"Неверный номер задачи. Доступные номера: 1-{allTasks.Count}", true, ct);
                 return;
             }
 
             var taskToRemove = allTasks[taskNumber - 1];
             await _toDoService.DeleteAsync(taskToRemove.Id, ct);
-            await botClient.SendMessage(chat, $"Задача \"{taskToRemove.Name}\" удалена.", ct);
+            await SendMessageAsync(botClient, chat, $"Задача \"{taskToRemove.Name}\" удалена.", true, ct);
         }
 
         private async Task HandleCompleteTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command, CancellationToken ct)
         {
             if (user == null)
             {
-                await botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.", ct);
+                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
                 return;
             }
 
@@ -311,13 +313,13 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (string.IsNullOrWhiteSpace(idPart))
             {
-                await botClient.SendMessage(chat, "Пожалуйста, укажите Id задачи. Пример: /completetask 73c7940a-ca8c-4327-8a15-9119bffd1d5e", ct);
+                await SendMessageAsync(botClient, chat, "Пожалуйста, укажите Id задачи. Пример: /completetask 73c7940a-ca8c-4327-8a15-9119bffd1d5e", true, ct);
                 return;
             }
 
             if (!Guid.TryParse(idPart, out Guid taskId))
             {
-                await botClient.SendMessage(chat, "Неверный формат Id. Пожалуйста, введите корректный GUID.", ct);
+                await SendMessageAsync(botClient, chat, "Неверный формат Id. Пожалуйста, введите корректный GUID.", true, ct);
                 return;
             }
 
@@ -326,19 +328,49 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (task == null)
             {
-                await botClient.SendMessage(chat, "Задача с указанным Id не найдена.", ct);
+                await SendMessageAsync(botClient, chat, "Задача с указанным Id не найдена.", true, ct);
                 return;
             }
 
             await _toDoService.MarkCompletedAsync(taskId, ct);
-            await botClient.SendMessage(chat, $"Задача \"{task.Name}\" завершена.", ct);
+            await SendMessageAsync(botClient, chat, $"Задача \"{task.Name}\" завершена.", true, ct);
         }
 
-        private async Task HandleExitAsync(ITelegramBotClient botClient, Chat chat, CancellationToken ct)
+        private async Task HandleExitAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
-            await botClient.SendMessage(chat, "Программа завершена.", ct);
-            Environment.Exit(0);
+            await SendMessageAsync(botClient, chat, "До свидания! Для продолжения работы используйте /start.", user != null, ct);
         }
 
+        private static ReplyKeyboardMarkup GetKeyboard(bool isRegistered)
+        {
+            if (!isRegistered)
+            {
+                return new ReplyKeyboardMarkup(new[]
+                {
+                    new KeyboardButton[] { "/start" }
+                })
+                {
+                    ResizeKeyboard = true
+                };
+            }
+
+            return new ReplyKeyboardMarkup(new[]
+            {
+                new KeyboardButton[] { "/showalltasks", "/showtasks", "/report" }
+            })
+            {
+                ResizeKeyboard = true
+            };
+        }
+
+        private static async Task SendMessageAsync(ITelegramBotClient botClient, Chat chat, string text, bool isRegistered, CancellationToken ct)
+        {
+            await botClient.SendMessage(
+                chat.Id,
+                text,
+                parseMode: ParseMode.Markdown,
+                replyMarkup: GetKeyboard(isRegistered),
+                cancellationToken: ct);
+        }
     }
 }
