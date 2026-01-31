@@ -1,4 +1,6 @@
-namespace Homework.TelegramBot.ConsoleApp
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
+
+namespace Homework.TelegramBot.ConsoleApp.Core.Services
 {
     public interface IUserService
     {

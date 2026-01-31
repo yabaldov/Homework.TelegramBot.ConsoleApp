@@ -1,36 +1,37 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
+using Homework.TelegramBot.ConsoleApp.Core.Exceptions;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Services
 {
     public class ToDoService : IToDoService
     {
-        private readonly List<ToDoItem> _tasks = new();
+        private readonly IToDoRepository _toDoRepository;
         private readonly int _taskCountLimit;
         private readonly int _taskLengthLimit;
 
-        public ToDoService(int taskCountLimit, int taskLengthLimit)
+        public ToDoService(IToDoRepository toDoRepository, int taskCountLimit, int taskLengthLimit)
         {
+            _toDoRepository = toDoRepository;
             _taskCountLimit = taskCountLimit;
             _taskLengthLimit = taskLengthLimit;
         }
 
         public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
         {
-            return _tasks.Where(t => t.User.UserId == userId).ToList();
+            return _toDoRepository.GetAllByUserId(userId);
         }
 
         public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
         {
-            return _tasks.Where(t => t.User.UserId == userId && t.State == ToDoItemState.Active).ToList();
+            return _toDoRepository.GetActiveByUserId(userId);
         }
 
         public ToDoItem Add(ToDoUser user, string name)
         {
-            var userTasks = _tasks.Where(t => t.User.UserId == user.UserId).ToList();
-
-            if (userTasks.Count >= _taskCountLimit)
+            if (_toDoRepository.CountActive(user.UserId) >= _taskCountLimit)
             {
                 throw new TaskCountLimitException(_taskCountLimit);
             }
@@ -40,33 +41,35 @@ namespace Homework.TelegramBot.ConsoleApp
                 throw new TaskLengthLimitException(name.Length, _taskLengthLimit);
             }
 
-            if (userTasks.Any(t => t.Name == name))
+            if (_toDoRepository.ExistsByName(user.UserId, name))
             {
                 throw new DuplicateTaskException(name);
             }
 
             var task = new ToDoItem(user, name);
-            _tasks.Add(task);
+            _toDoRepository.Add(task);
             return task;
         }
 
         public void MarkCompleted(Guid id)
         {
-            var task = _tasks.FirstOrDefault(t => t.Id == id);
+            var task = _toDoRepository.Get(id);
             if (task != null)
             {
                 task.State = ToDoItemState.Completed;
                 task.StateChangedAt = DateTime.UtcNow;
+                _toDoRepository.Update(task);
             }
         }
 
         public void Delete(Guid id)
         {
-            var task = _tasks.FirstOrDefault(t => t.Id == id);
-            if (task != null)
-            {
-                _tasks.Remove(task);
-            }
+            _toDoRepository.Delete(id);
+        }
+
+        public IReadOnlyList<ToDoItem> Find(ToDoUser user, string namePrefix)
+        {
+            return _toDoRepository.Find(user.UserId, item => item.Name.StartsWith(namePrefix));
         }
     }
 }

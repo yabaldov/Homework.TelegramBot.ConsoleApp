@@ -2,18 +2,22 @@ using System;
 using System.Linq;
 using Otus.ToDoList.ConsoleBot;
 using Otus.ToDoList.ConsoleBot.Types;
+using Homework.TelegramBot.ConsoleApp.Core.Entities;
+using Homework.TelegramBot.ConsoleApp.Core.Services;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 {
     public class UpdateHandler : IUpdateHandler
     {
         private readonly IUserService _userService;
         private readonly IToDoService _toDoService;
+        private readonly IToDoReportService _toDoReportService;
 
-        public UpdateHandler(IUserService userService, IToDoService toDoService)
+        public UpdateHandler(IUserService userService, IToDoService toDoService, IToDoReportService toDoReportService)
         {
             _userService = userService;
             _toDoService = toDoService;
+            _toDoReportService = toDoReportService;
         }
 
         public void HandleUpdateAsync(ITelegramBotClient botClient, Update update)
@@ -43,6 +47,9 @@ namespace Homework.TelegramBot.ConsoleApp
                     case "/showalltasks":
                         HandleShowAllTasks(botClient, chat, user);
                         break;
+                    case "/report":
+                        HandleReport(botClient, chat, user);
+                        break;
                     case string cmd when cmd.StartsWith("/addtask"):
                         HandleAddTask(botClient, chat, user, cmd);
                         break;
@@ -51,6 +58,9 @@ namespace Homework.TelegramBot.ConsoleApp
                         break;
                     case string cmd when cmd.StartsWith("/completetask"):
                         HandleCompleteTask(botClient, chat, user, cmd);
+                        break;
+                    case string cmd when cmd.StartsWith("/find"):
+                        HandleFind(botClient, chat, user, cmd);
                         break;
                     case "/exit":
                         HandleExit(botClient, chat);
@@ -77,7 +87,7 @@ namespace Homework.TelegramBot.ConsoleApp
             var userName = from.Username ?? $"User_{from.Id}";
             var newUser = _userService.RegisterUser(from.Id, userName);
             botClient.SendMessage(chat, $"Привет, {newUser.TelegramUserName}!");
-            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /exit");
+            botClient.SendMessage(chat, "Теперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /find, /exit");
         }
 
         private void HandleHelp(ITelegramBotClient botClient, Chat chat, ToDoUser? user)
@@ -94,6 +104,8 @@ namespace Homework.TelegramBot.ConsoleApp
                         "/showalltasks -- показать все задачи.\n" +
                         "/completetask <Id> -- завершить задачу по Id.\n" +
                         "/removetask <номер> -- удалить задачу по номеру.\n" +
+                        "/report -- статистика по задачам.\n" +
+                        "/find <префикс> -- найти задачи по началу названия.\n" +
                         "/exit -- выйти из программы.";
             }
 
@@ -150,6 +162,55 @@ namespace Homework.TelegramBot.ConsoleApp
             foreach (var task in tasks)
             {
                 message += $"({task.State}) {task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}\n";
+            }
+
+            botClient.SendMessage(chat, message.TrimEnd());
+        }
+
+        private void HandleReport(ITelegramBotClient botClient, Chat chat, ToDoUser? user)
+        {
+            if (user == null)
+            {
+                botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.");
+                return;
+            }
+
+            var (total, completed, active, generatedAt) = _toDoReportService.GetUserStats(user.UserId);
+
+            var message = $"Статистика по задачам на {generatedAt:dd.MM.yyyy HH:mm:ss}. " +
+                          $"Всего: {total}; Завершенных: {completed}; Активных: {active};";
+
+            botClient.SendMessage(chat, message);
+        }
+
+        private void HandleFind(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command)
+        {
+            if (user == null)
+            {
+                botClient.SendMessage(chat, "Сначала используйте команду /start для регистрации.");
+                return;
+            }
+
+            var namePrefix = command.Length > 5 ? command.Substring(5).Trim() : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(namePrefix))
+            {
+                botClient.SendMessage(chat, "Пожалуйста, укажите начало названия задачи. Пример: /find Купить");
+                return;
+            }
+
+            var tasks = _toDoService.Find(user, namePrefix);
+
+            if (tasks.Count == 0)
+            {
+                botClient.SendMessage(chat, $"Задачи, начинающиеся с \"{namePrefix}\", не найдены.");
+                return;
+            }
+
+            var message = "Найденные задачи:\n";
+            foreach (var task in tasks)
+            {
+                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - {task.Id}\n";
             }
 
             botClient.SendMessage(chat, message.TrimEnd());
@@ -256,12 +317,12 @@ namespace Homework.TelegramBot.ConsoleApp
             _toDoService.MarkCompleted(taskId);
             botClient.SendMessage(chat, $"Задача \"{task.Name}\" завершена.");
         }
-    
+
         private void HandleExit(ITelegramBotClient botClient, Chat chat)
         {
             botClient.SendMessage(chat, "Программа завершена.");
             Environment.Exit(0);
         }
-    
+
     }
 }

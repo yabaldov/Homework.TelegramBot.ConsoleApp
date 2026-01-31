@@ -1,5 +1,9 @@
 using System;
 using Otus.ToDoList.ConsoleBot;
+using Homework.TelegramBot.ConsoleApp.Core.Services;
+using Homework.TelegramBot.ConsoleApp.Core.Validation;
+using Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess;
+using Homework.TelegramBot.ConsoleApp.TelegramBot;
 
 namespace Homework.TelegramBot.ConsoleApp
 {
@@ -45,9 +49,14 @@ namespace Homework.TelegramBot.ConsoleApp
                 }
             }
 
-            var userService = new UserService();
-            var toDoService = new ToDoService(tasksLimit, taskLengthLimit);
-            var updateHandler = new UpdateHandler(userService, toDoService);
+            var userRepository = new InMemoryUserRepository();
+            var toDoRepository = new InMemoryToDoRepository();
+
+            var userService = new UserService(userRepository);
+            var toDoService = new ToDoService(toDoRepository, tasksLimit, taskLengthLimit);
+            var toDoReportService = new ToDoReportService(toDoRepository);
+
+            var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
 
             ITelegramBotClient botClient = new ConsoleBotClient();
             botClient.StartReceiving(updateHandler);

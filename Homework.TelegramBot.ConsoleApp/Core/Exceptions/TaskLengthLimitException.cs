@@ -1,6 +1,6 @@
 using System;
 
-namespace Homework.TelegramBot.ConsoleApp
+namespace Homework.TelegramBot.ConsoleApp.Core.Exceptions
 {
     public class TaskLengthLimitException : Exception
     {
