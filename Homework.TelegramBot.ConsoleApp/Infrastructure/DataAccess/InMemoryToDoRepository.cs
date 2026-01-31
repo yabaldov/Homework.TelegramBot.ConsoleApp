@@ -32,8 +32,15 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
 
         public void Update(ToDoItem item)
         {
-            // В in-memory реализации объект уже обновлён по ссылке,
-            // но метод нужен для совместимости с интерфейсом
+            ArgumentNullException.ThrowIfNull(item);
+
+            var i = _items.FindIndex(t => t.Id == item.Id);
+            if (i == -1)
+            {
+                throw new InvalidOperationException($"Задача с Id {item.Id} не найдена в памяти.");
+            }
+
+            _items[i] = item;
         }
 
         public void Delete(Guid id)
