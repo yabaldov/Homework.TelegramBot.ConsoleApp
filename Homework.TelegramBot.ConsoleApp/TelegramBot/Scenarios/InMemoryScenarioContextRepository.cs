@@ -4,10 +4,6 @@ using System.Threading.Tasks;
 
 namespace Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
-/// <summary>
-/// In-memory реализация репозитория контекстов сценариев.
-/// Хранит контексты в памяти с использованием Dictionary.
-/// </summary>
 public class InMemoryScenarioContextRepository : IScenarioContextRepository
 {
     private readonly Dictionary<long, ScenarioContext> _contexts = new();

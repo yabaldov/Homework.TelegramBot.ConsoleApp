@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
+using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
 namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 {
@@ -17,12 +19,21 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         private readonly IUserService _userService;
         private readonly IToDoService _toDoService;
         private readonly IToDoReportService _toDoReportService;
+        private readonly IEnumerable<IScenario> _scenarios;
+        private readonly IScenarioContextRepository _contextRepository;
 
-        public UpdateHandler(IUserService userService, IToDoService toDoService, IToDoReportService toDoReportService)
+        public UpdateHandler(
+            IUserService userService,
+            IToDoService toDoService,
+            IToDoReportService toDoReportService,
+            IEnumerable<IScenario> scenarios,
+            IScenarioContextRepository contextRepository)
         {
             _userService = userService;
             _toDoService = toDoService;
             _toDoReportService = toDoReportService;
+            _scenarios = scenarios;
+            _contextRepository = contextRepository;
         }
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken ct)
@@ -40,6 +51,14 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             try
             {
                 var user = await _userService.GetUserAsync(from.Id, ct);
+
+                // Проверяем, есть ли активный сценарий у пользователя
+                var scenarioContext = await _contextRepository.GetContext(from.Id, ct);
+                if (scenarioContext != null)
+                {
+                    await ProcessScenarioAsync(botClient, scenarioContext, update, ct);
+                    return;
+                }
 
                 switch (text)
                 {
@@ -91,6 +110,31 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         {
             Console.WriteLine($"Ошибка обработки ({source}): {exception.GetType().Name}: {exception.Message}");
             return Task.CompletedTask;
+        }
+
+        private IScenario GetScenario(ScenarioType scenarioType)
+        {
+            var scenario = _scenarios.FirstOrDefault(s => s.CanHandle(scenarioType));
+            if (scenario == null)
+            {
+                throw new InvalidOperationException($"Сценарий для типа {scenarioType} не найден.");
+            }
+            return scenario;
+        }
+
+        private async Task ProcessScenarioAsync(ITelegramBotClient botClient, ScenarioContext context, Update update, CancellationToken ct)
+        {
+            var scenario = GetScenario(context.CurrentScenario);
+            var result = await scenario.HandleMessageAsync(botClient, context, update, ct);
+
+            if (result == ScenarioResult.Completed)
+            {
+                await _contextRepository.ResetContext(context.UserId, ct);
+            }
+            else
+            {
+                await _contextRepository.SetContext(context.UserId, context, ct);
+            }
         }
 
         private async Task HandleStartAsync(ITelegramBotClient botClient, Chat chat, User from, ToDoUser? user, CancellationToken ct)
