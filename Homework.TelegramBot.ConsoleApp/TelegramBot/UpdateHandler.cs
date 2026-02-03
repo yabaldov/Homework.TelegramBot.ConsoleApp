@@ -80,8 +80,8 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                     case "/report":
                         await HandleReportAsync(botClient, chat, user, ct);
                         break;
-                    case string cmd when cmd.StartsWith("/addtask"):
-                        await HandleAddTaskAsync(botClient, chat, user, cmd, ct);
+                    case "/addtask":
+                        await HandleAddTaskAsync(botClient, chat, user, update, ct);
                         break;
                     case string cmd when cmd.StartsWith("/removetask"):
                         await HandleRemoveTaskAsync(botClient, chat, user, cmd, ct);
@@ -278,7 +278,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
         }
 
-        private async Task HandleAddTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command, CancellationToken ct)
+        private async Task HandleAddTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, Update update, CancellationToken ct)
         {
             if (user == null)
             {
@@ -286,16 +286,12 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var taskName = command.Length > 8 ? command.Substring(8).Trim() : string.Empty;
-
-            if (string.IsNullOrWhiteSpace(taskName))
+            var context = new ScenarioContext(ScenarioType.AddTask)
             {
-                await SendMessageAsync(botClient, chat, "Пожалуйста, укажите название задачи. Пример: /addtask Купить колбасы", true, ct);
-                return;
-            }
+                UserId = user.TelegramUserId
+            };
 
-            var task = await _toDoService.AddAsync(user, taskName, ct);
-            await SendMessageAsync(botClient, chat, $"Задача \"{task.Name}\" добавлена.", true, ct);
+            await ProcessScenarioAsync(botClient, context, update, ct);
         }
 
         private async Task HandleRemoveTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, string command, CancellationToken ct)
@@ -400,7 +396,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             return new ReplyKeyboardMarkup(new[]
             {
-                new KeyboardButton[] { "/showalltasks", "/showtasks", "/report" }
+                new KeyboardButton[] { "/addtask", "/showtasks", "/showalltasks", "/report" }
             })
             {
                 ResizeKeyboard = true
