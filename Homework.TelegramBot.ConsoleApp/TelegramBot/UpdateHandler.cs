@@ -52,6 +52,13 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             {
                 var user = await _userService.GetUserAsync(from.Id, ct);
 
+                // Обработка команды /cancel до проверки активного сценария
+                if (text == "/cancel")
+                {
+                    await HandleCancelAsync(botClient, chat, from.Id, user, ct);
+                    return;
+                }
+
                 // Проверяем, есть ли активный сценарий у пользователя
                 var scenarioContext = await _contextRepository.GetContext(from.Id, ct);
                 if (scenarioContext != null)
@@ -161,13 +168,14 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             if (user != null)
             {
-                help += "/addtask <название> -- добавить задачу.\n" +
+                help += "/addtask -- добавить задачу.\n" +
                         "/showtasks -- показать активные задачи.\n" +
                         "/showalltasks -- показать все задачи.\n" +
                         "/completetask <Id> -- завершить задачу по Id.\n" +
                         "/removetask <номер> -- удалить задачу по номеру.\n" +
                         "/report -- статистика по задачам.\n" +
                         "/find <префикс> -- найти задачи по началу названия.\n" +
+                        "/cancel -- отменить текущий сценарий.\n" +
                         "/exit -- выйти из программы.";
             }
 
@@ -379,6 +387,20 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         private async Task HandleExitAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
             await SendMessageAsync(botClient, chat, "До свидания! Для продолжения работы используйте /start.", user != null, ct);
+        }
+
+        private async Task HandleCancelAsync(ITelegramBotClient botClient, Chat chat, long telegramUserId, ToDoUser? user, CancellationToken ct)
+        {
+            var context = await _contextRepository.GetContext(telegramUserId, ct);
+
+            if (context == null)
+            {
+                await SendMessageAsync(botClient, chat, "Нет активного сценария для отмены.", user != null, ct);
+                return;
+            }
+
+            await _contextRepository.ResetContext(telegramUserId, ct);
+            await SendMessageAsync(botClient, chat, "Сценарий отменён.", user != null, ct);
         }
 
         private static ReplyKeyboardMarkup GetKeyboard(bool isRegistered)
