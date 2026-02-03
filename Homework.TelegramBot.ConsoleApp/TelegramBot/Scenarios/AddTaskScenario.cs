@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -41,6 +43,9 @@ public class AddTaskScenario : IScenario
 
             case "Name":
                 return await HandleNameStepAsync(bot, chat, context, text, ct);
+
+            case "Deadline":
+                return await HandleDeadlineStepAsync(bot, chat, context, text, ct);
 
             default:
                 return ScenarioResult.Completed;
@@ -89,12 +94,52 @@ public class AddTaskScenario : IScenario
             return ScenarioResult.Transition;
         }
 
-        var user = (ToDoUser)context.Data["User"];
-        var task = await _toDoService.AddAsync(user, name, ct);
+        context.Data["Name"] = name;
+        context.CurrentStep = "Deadline";
 
         await bot.SendMessage(
             chat.Id,
-            $"Задача \"{task.Name}\" добавлена.",
+            "Введите срок выполнения (дд.мм.гггг):",
+            replyMarkup: GetCancelKeyboard(),
+            cancellationToken: ct);
+
+        return ScenarioResult.Transition;
+    }
+
+    private async Task<ScenarioResult> HandleDeadlineStepAsync(
+        ITelegramBotClient bot,
+        Chat chat,
+        ScenarioContext context,
+        string deadlineText,
+        CancellationToken ct)
+    {
+        if (!DateTime.TryParseExact(deadlineText, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var deadline))
+        {
+            await bot.SendMessage(
+                chat.Id,
+                "Неверный формат даты. Введите срок выполнения в формате дд.мм.гггг:",
+                replyMarkup: GetCancelKeyboard(),
+                cancellationToken: ct);
+            return ScenarioResult.Transition;
+        }
+
+        if (deadline.Date < DateTime.Today)
+        {
+            await bot.SendMessage(
+                chat.Id,
+                "Срок выполнения не может быть в прошлом. Введите дату сегодня или в будущем:",
+                replyMarkup: GetCancelKeyboard(),
+                cancellationToken: ct);
+            return ScenarioResult.Transition;
+        }
+
+        var user = (ToDoUser)context.Data["User"];
+        var name = (string)context.Data["Name"];
+        var task = await _toDoService.AddAsync(user, name, deadline, ct);
+
+        await bot.SendMessage(
+            chat.Id,
+            $"Задача \"{task.Name}\" добавлена. Срок: {task.Deadline:dd.MM.yyyy}",
             replyMarkup: GetMainKeyboard(),
             cancellationToken: ct);
 

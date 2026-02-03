@@ -206,7 +206,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var message = "Ваши задачи:\n";
             foreach (var task in tasks)
             {
-                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{task.Id}`\n";
+                message += $"{task.Name} - Создано: {task.CreatedAt:dd.MM.yyyy} - Срок: {task.Deadline:dd.MM.yyyy} - `{task.Id}`\n";
             }
 
             await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
@@ -231,7 +231,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var message = "Все задачи:\n";
             foreach (var task in tasks)
             {
-                message += $"({task.State}) {task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{task.Id}`\n";
+                message += $"({task.State}) {task.Name} - Создано: {task.CreatedAt:dd.MM.yyyy} - Срок: {task.Deadline:dd.MM.yyyy} - `{task.Id}`\n";
             }
 
             await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
