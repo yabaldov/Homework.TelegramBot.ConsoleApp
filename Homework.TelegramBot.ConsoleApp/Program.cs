@@ -9,6 +9,7 @@ using Homework.TelegramBot.ConsoleApp.Core.Services;
 using Homework.TelegramBot.ConsoleApp.Core.Validation;
 using Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess;
 using Homework.TelegramBot.ConsoleApp.TelegramBot;
+using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
 namespace Homework.TelegramBot.ConsoleApp
 {
@@ -73,7 +74,19 @@ namespace Homework.TelegramBot.ConsoleApp
             var toDoService = new ToDoService(toDoRepository, tasksLimit, taskLengthLimit);
             var toDoReportService = new ToDoReportService(toDoRepository);
 
-            var updateHandler = new UpdateHandler(userService, toDoService, toDoReportService);
+            var scenarioContextRepository = new InMemoryScenarioContextRepository();
+            var scenarios = new IScenario[]
+            {
+                new AddTaskScenario(userService, toDoService)
+            };
+
+            var updateHandler = new UpdateHandler(
+                userService,
+                toDoService,
+                toDoReportService,
+                scenarios,
+                scenarioContextRepository
+                );
 
             var botClient = new TelegramBotClient(token);
 
@@ -95,7 +108,8 @@ namespace Homework.TelegramBot.ConsoleApp
                 new BotCommand { Command = "completetask", Description = "Завершить задачу" },
                 new BotCommand { Command = "find", Description = "Найти задачу по началу названия" },
                 new BotCommand { Command = "report", Description = "Статистика" }
-            }, cancellationToken: cts.Token);
+            }, cancellationToken: cts.Token
+            );
 
             botClient.StartReceiving(updateHandler, receiverOptions, cts.Token);
 
