@@ -135,7 +135,7 @@ public class AddTaskScenario : IScenario
 
         var user = (ToDoUser)context.Data["User"];
         var name = (string)context.Data["Name"];
-        var task = await _toDoService.AddAsync(user, name, deadline, ct);
+        var task = await _toDoService.AddAsync(user, name, deadline, list: null, ct);
 
         await bot.SendMessage(
             chat.Id,
