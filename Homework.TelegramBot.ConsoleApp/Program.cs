@@ -87,6 +87,7 @@ namespace Homework.TelegramBot.ConsoleApp
                 userService,
                 toDoService,
                 toDoReportService,
+                toDoListService,
                 scenarios,
                 scenarioContextRepository
                 );
@@ -105,8 +106,7 @@ namespace Homework.TelegramBot.ConsoleApp
                 new BotCommand { Command = "help", Description = "Список команд" },
                 new BotCommand { Command = "info", Description = "Информация о боте" },
                 new BotCommand { Command = "addtask", Description = "Добавить задачу" },
-                new BotCommand { Command = "showtasks", Description = "Показать активные задачи" },
-                new BotCommand { Command = "showalltasks", Description = "Показать все задачи" },
+                new BotCommand { Command = "show", Description = "Показать списки и задачи" },
                 new BotCommand { Command = "removetask", Description = "Удалить задачу" },
                 new BotCommand { Command = "completetask", Description = "Завершить задачу" },
                 new BotCommand { Command = "find", Description = "Найти задачу по началу названия" },

@@ -161,7 +161,7 @@ public class AddTaskScenario : IScenario
     {
         return new ReplyKeyboardMarkup(new[]
         {
-            new KeyboardButton[] { "/addtask", "/showtasks", "/showalltasks", "/report" }
+            new KeyboardButton[] { "/addtask", "/show", "/report" }
         })
         {
             ResizeKeyboard = true

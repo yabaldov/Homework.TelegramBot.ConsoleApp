@@ -10,6 +10,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
+using Homework.TelegramBot.ConsoleApp.TelegramBot.Dto;
 using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
 namespace Homework.TelegramBot.ConsoleApp.TelegramBot
@@ -19,6 +20,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
         private readonly IUserService _userService;
         private readonly IToDoService _toDoService;
         private readonly IToDoReportService _toDoReportService;
+        private readonly IToDoListService _toDoListService;
         private readonly IEnumerable<IScenario> _scenarios;
         private readonly IScenarioContextRepository _contextRepository;
 
@@ -26,12 +28,14 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             IUserService userService,
             IToDoService toDoService,
             IToDoReportService toDoReportService,
+            IToDoListService toDoListService,
             IEnumerable<IScenario> scenarios,
             IScenarioContextRepository contextRepository)
         {
             _userService = userService;
             _toDoService = toDoService;
             _toDoReportService = toDoReportService;
+            _toDoListService = toDoListService;
             _scenarios = scenarios;
             _contextRepository = contextRepository;
         }
@@ -78,11 +82,8 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                     case "/info":
                         await HandleInfoAsync(botClient, chat, user, ct);
                         break;
-                    case "/showtasks":
-                        await HandleShowTasksAsync(botClient, chat, user, ct);
-                        break;
-                    case "/showalltasks":
-                        await HandleShowAllTasksAsync(botClient, chat, user, ct);
+                    case "/show":
+                        await HandleShowAsync(botClient, chat, user, ct);
                         break;
                     case "/report":
                         await HandleReportAsync(botClient, chat, user, ct);
@@ -156,7 +157,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var userName = from.Username ?? $"User_{from.Id}";
             var newUser = await _userService.RegisterUserAsync(from.Id, userName, ct);
             var greeting = from.FirstName ?? newUser.TelegramUserName;
-            await SendMessageAsync(botClient, chat, $"Привет, {greeting}!\nТеперь вам доступны команды: /addtask, /showtasks, /showalltasks, /removetask, /completetask, /report, /find, /exit", true, ct);
+            await SendMessageAsync(botClient, chat, $"Привет, {greeting}!\nТеперь вам доступны команды: /addtask, /show, /removetask, /completetask, /report, /find, /exit", true, ct);
         }
 
         private async Task HandleHelpAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
@@ -169,8 +170,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             if (user != null)
             {
                 help += "/addtask -- добавить задачу.\n" +
-                        "/showtasks -- показать активные задачи.\n" +
-                        "/showalltasks -- показать все задачи.\n" +
+                        "/show -- показать списки и задачи.\n" +
                         "/completetask <Id> -- завершить задачу по Id.\n" +
                         "/removetask <номер> -- удалить задачу по номеру.\n" +
                         "/report -- статистика по задачам.\n" +
@@ -187,7 +187,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             await SendMessageAsync(botClient, chat, "Программа: Telegram ToDo Bot.\nВерсия: 1.0.0\nДата создания: 2026-01-29", user != null, ct);
         }
 
-        private async Task HandleShowTasksAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
+        private async Task HandleShowAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
         {
             if (user == null)
             {
@@ -195,46 +195,34 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var tasks = await _toDoService.GetActiveByUserIdAsync(user.UserId, ct);
+            var lists = await _toDoListService.GetUserListsAsync(user.UserId, ct);
 
-            if (tasks.Count == 0)
+            var buttons = new List<List<InlineKeyboardButton>>
             {
-                await SendMessageAsync(botClient, chat, "Список задач пуст.", true, ct);
-                return;
+                new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new ToDoListCallbackDto { Action = "show", ToDoListId = null }.ToString()) }
+            };
+
+            foreach (var list in lists)
+            {
+                buttons.Add(new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "show", ToDoListId = list.Id }.ToString())
+                });
             }
 
-            var message = "Ваши задачи:\n";
-            foreach (var task in tasks)
+            buttons.Add(new List<InlineKeyboardButton>
             {
-                message += $"{task.Name} - Создано: {task.CreatedAt:dd.MM.yyyy} - Срок: {task.Deadline:dd.MM.yyyy} - `{task.Id}`\n";
-            }
+                InlineKeyboardButton.WithCallbackData("🆕Добавить", "addlist"),
+                InlineKeyboardButton.WithCallbackData("❌Удалить", "deletelist")
+            });
 
-            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
-        }
+            var inlineKeyboard = new InlineKeyboardMarkup(buttons);
 
-        private async Task HandleShowAllTasksAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
-        {
-            if (user == null)
-            {
-                await SendMessageAsync(botClient, chat, "Сначала используйте команду /start для регистрации.", false, ct);
-                return;
-            }
-
-            var tasks = await _toDoService.GetAllByUserIdAsync(user.UserId, ct);
-
-            if (tasks.Count == 0)
-            {
-                await SendMessageAsync(botClient, chat, "Список задач пуст.", true, ct);
-                return;
-            }
-
-            var message = "Все задачи:\n";
-            foreach (var task in tasks)
-            {
-                message += $"({task.State}) {task.Name} - Создано: {task.CreatedAt:dd.MM.yyyy} - Срок: {task.Deadline:dd.MM.yyyy} - `{task.Id}`\n";
-            }
-
-            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
+            await botClient.SendMessage(
+                chat.Id,
+                "Выберите список",
+                replyMarkup: inlineKeyboard,
+                cancellationToken: ct);
         }
 
         private async Task HandleReportAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
@@ -418,7 +406,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             return new ReplyKeyboardMarkup(new[]
             {
-                new KeyboardButton[] { "/addtask", "/showtasks", "/showalltasks", "/report" }
+                new KeyboardButton[] { "/addtask", "/show", "/report" }
             })
             {
                 ResizeKeyboard = true
