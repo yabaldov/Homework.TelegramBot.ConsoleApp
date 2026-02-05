@@ -73,5 +73,10 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
         {
             return _toDoRepository.FindAsync(user.UserId, item => item.Name.StartsWith(namePrefix), ct);
         }
+
+        public Task<IReadOnlyList<ToDoItem>> GetByUserIdAndListAsync(Guid userId, Guid? listId, CancellationToken ct)
+        {
+            return _toDoRepository.GetByUserIdAndListAsync(userId, listId, ct);
+        }
     }
 }

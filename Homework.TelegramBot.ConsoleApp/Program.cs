@@ -68,9 +68,12 @@ namespace Homework.TelegramBot.ConsoleApp
             }
 
             var userRepository = new FileUserRepository("Data/Users");
+            var toDoListRepository = new FileToDoListRepository("Data/ToDoLists", userRepository);
             var toDoRepository = new FileToDoRepository("Data/ToDos", userRepository);
+            toDoRepository.SetToDoListRepository(toDoListRepository);
 
             var userService = new UserService(userRepository);
+            var toDoListService = new ToDoListService(toDoListRepository);
             var toDoService = new ToDoService(toDoRepository, tasksLimit, taskLengthLimit);
             var toDoReportService = new ToDoReportService(toDoRepository);
 

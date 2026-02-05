@@ -18,6 +18,7 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
         private readonly IUserRepository _userRepository;
         private readonly JsonSerializerOptions _jsonOptions;
         private Dictionary<Guid, Guid> _index; // ToDoItemId → UserId
+        private IToDoListRepository? _toDoListRepository;
 
         public FileToDoRepository(string basePath, IUserRepository userRepository)
         {
@@ -36,6 +37,11 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             }
 
             LoadOrRebuildIndex();
+        }
+
+        public void SetToDoListRepository(IToDoListRepository toDoListRepository)
+        {
+            _toDoListRepository = toDoListRepository;
         }
 
         public async Task AddAsync(ToDoItem item, CancellationToken ct)
@@ -128,6 +134,11 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             return items.Count;
         }
 
+        public async Task<IReadOnlyList<ToDoItem>> GetByUserIdAndListAsync(Guid userId, Guid? listId, CancellationToken ct)
+        {
+            return await GetItemsByUserIdAsync(userId, item => item.List?.Id == listId, ct);
+        }
+
         private async Task<List<ToDoItem>> GetItemsByUserIdAsync(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken ct)
         {
             var result = new List<ToDoItem>();
@@ -170,7 +181,13 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
                 return null;
             }
 
-            return dto.ToEntity(user);
+            ToDoList? list = null;
+            if (dto.ListId.HasValue && _toDoListRepository != null)
+            {
+                list = await _toDoListRepository.GetAsync(dto.ListId.Value, ct);
+            }
+
+            return dto.ToEntity(user, list);
         }
 
         private string GetUserFolderPath(Guid userId)
