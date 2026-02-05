@@ -96,7 +96,7 @@ namespace Homework.TelegramBot.ConsoleApp
 
             var receiverOptions = new ReceiverOptions
             {
-                AllowedUpdates = new[] { UpdateType.Message },
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery },
                 DropPendingUpdates = true
             };
 

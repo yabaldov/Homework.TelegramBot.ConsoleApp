@@ -42,9 +42,16 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken ct)
         {
-            if (update.Message is not { } message)
-                return;
+            await (update switch
+            {
+                { Message: { } message } => OnMessage(botClient, update, message, ct),
+                { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, update, callbackQuery, ct),
+                _ => Task.CompletedTask
+            });
+        }
 
+        private async Task OnMessage(ITelegramBotClient botClient, Update update, Message message, CancellationToken ct)
+        {
             var chat = message.Chat;
             var from = message.From;
             var text = message.Text?.Trim() ?? string.Empty;
@@ -112,6 +119,80 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             {
                 await botClient.SendMessage(chat.Id, $"Ошибка: {ex.Message}", cancellationToken: ct);
             }
+        }
+
+        private async Task OnCallbackQuery(ITelegramBotClient botClient, Update update, CallbackQuery query, CancellationToken ct)
+        {
+            if (query.From == null || query.Message == null || string.IsNullOrEmpty(query.Data))
+                return;
+
+            var chat = query.Message.Chat;
+
+            try
+            {
+                var user = await _userService.GetUserAsync(query.From.Id, ct);
+                if (user == null)
+                    return;
+
+                // Проверяем, есть ли активный сценарий у пользователя
+                var scenarioContext = await _contextRepository.GetContext(query.From.Id, ct);
+                if (scenarioContext != null)
+                {
+                    await ProcessScenarioAsync(botClient, scenarioContext, update, ct);
+                    return;
+                }
+
+                var callback = CallbackDto.FromString(query.Data);
+
+                switch (callback.Action)
+                {
+                    case "show":
+                        var listCallback = ToDoListCallbackDto.FromString(query.Data);
+                        await HandleShowTasksByListAsync(botClient, chat, user, listCallback.ToDoListId, ct);
+                        break;
+                    case "addlist":
+                        await StartScenarioAsync(botClient, user, update, ScenarioType.AddList, ct);
+                        break;
+                    case "deletelist":
+                        await StartScenarioAsync(botClient, user, update, ScenarioType.DeleteList, ct);
+                        break;
+                }
+
+                await botClient.AnswerCallbackQuery(query.Id, cancellationToken: ct);
+            }
+            catch (Exception ex)
+            {
+                await botClient.SendMessage(chat.Id, $"Ошибка: {ex.Message}", cancellationToken: ct);
+            }
+        }
+
+        private async Task HandleShowTasksByListAsync(ITelegramBotClient botClient, Chat chat, ToDoUser user, Guid? listId, CancellationToken ct)
+        {
+            var tasks = await _toDoService.GetByUserIdAndListAsync(user.UserId, listId, ct);
+
+            if (tasks.Count == 0)
+            {
+                await SendMessageAsync(botClient, chat, "В этом списке нет задач.", true, ct);
+                return;
+            }
+
+            var message = "Задачи:\n";
+            foreach (var task in tasks)
+            {
+                message += $"({task.State}) {task.Name} - Срок: {task.Deadline:dd.MM.yyyy} - `{task.Id}`\n";
+            }
+
+            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
+        }
+
+        private async Task StartScenarioAsync(ITelegramBotClient botClient, ToDoUser user, Update update, ScenarioType scenarioType, CancellationToken ct)
+        {
+            var context = new ScenarioContext(scenarioType)
+            {
+                UserId = user.TelegramUserId
+            };
+
+            await ProcessScenarioAsync(botClient, context, update, ct);
         }
 
         public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken ct)
