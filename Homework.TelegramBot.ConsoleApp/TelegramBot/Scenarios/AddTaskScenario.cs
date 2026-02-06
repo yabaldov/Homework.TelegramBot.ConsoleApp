@@ -43,9 +43,6 @@ public class AddTaskScenario : IScenario
             case null:
                 return await HandleStartStepAsync(bot, chatId, context, ct);
 
-            case "List":
-                return await HandleListStepAsync(bot, chatId, context, update, ct);
-
             case "Name":
                 var text = update.Message?.Text?.Trim() ?? string.Empty;
                 return await HandleNameStepAsync(bot, chatId, context, text, ct);
@@ -53,6 +50,9 @@ public class AddTaskScenario : IScenario
             case "Deadline":
                 var deadlineText = update.Message?.Text?.Trim() ?? string.Empty;
                 return await HandleDeadlineStepAsync(bot, chatId, context, deadlineText, ct);
+
+            case "List":
+                return await HandleListStepAsync(bot, chatId, context, update, ct);
 
             default:
                 return ScenarioResult.Completed;
@@ -73,56 +73,6 @@ public class AddTaskScenario : IScenario
         }
 
         context.Data["User"] = user;
-
-        var lists = await _toDoListService.GetUserListsAsync(user.UserId, ct);
-
-        var buttons = new List<List<InlineKeyboardButton>>
-        {
-            new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new ToDoListCallbackDto { Action = "selectlist", ToDoListId = null }.ToString()) }
-        };
-
-        foreach (var list in lists)
-        {
-            buttons.Add(new List<InlineKeyboardButton>
-            {
-                InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "selectlist", ToDoListId = list.Id }.ToString())
-            });
-        }
-
-        var inlineKeyboard = new InlineKeyboardMarkup(buttons);
-
-        await bot.SendMessage(
-            chatId,
-            "Выберите список для задачи:",
-            replyMarkup: inlineKeyboard,
-            cancellationToken: ct);
-
-        context.CurrentStep = "List";
-        return ScenarioResult.Transition;
-    }
-
-    private async Task<ScenarioResult> HandleListStepAsync(
-        ITelegramBotClient bot,
-        long chatId,
-        ScenarioContext context,
-        Update update,
-        CancellationToken ct)
-    {
-        var callbackData = update.CallbackQuery?.Data;
-        if (string.IsNullOrEmpty(callbackData))
-            return ScenarioResult.Transition;
-
-        var listCallback = ToDoListCallbackDto.FromString(callbackData);
-
-        if (listCallback.ToDoListId.HasValue)
-        {
-            var list = await _toDoListService.GetAsync(listCallback.ToDoListId.Value, ct);
-            if (list != null)
-            {
-                context.Data["List"] = list;
-            }
-        }
-
         context.CurrentStep = "Name";
 
         await bot.SendMessage(
@@ -190,10 +140,58 @@ public class AddTaskScenario : IScenario
             return ScenarioResult.Transition;
         }
 
+        context.Data["Deadline"] = deadline;
+
+        var user = (ToDoUser)context.Data["User"];
+        var lists = await _toDoListService.GetUserListsAsync(user.UserId, ct);
+
+        var buttons = new List<List<InlineKeyboardButton>>
+        {
+            new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new ToDoListCallbackDto { Action = "selectlist", ToDoListId = null }.ToString()) }
+        };
+
+        foreach (var list in lists)
+        {
+            buttons.Add(new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "selectlist", ToDoListId = list.Id }.ToString())
+            });
+        }
+
+        var inlineKeyboard = new InlineKeyboardMarkup(buttons);
+
+        await bot.SendMessage(
+            chatId,
+            "Выберите список для задачи:",
+            replyMarkup: inlineKeyboard,
+            cancellationToken: ct);
+
+        context.CurrentStep = "List";
+        return ScenarioResult.Transition;
+    }
+
+    private async Task<ScenarioResult> HandleListStepAsync(
+        ITelegramBotClient bot,
+        long chatId,
+        ScenarioContext context,
+        Update update,
+        CancellationToken ct)
+    {
+        var callbackData = update.CallbackQuery?.Data;
+        if (string.IsNullOrEmpty(callbackData))
+            return ScenarioResult.Transition;
+
+        var listCallback = ToDoListCallbackDto.FromString(callbackData);
+
+        ToDoList? list = null;
+        if (listCallback.ToDoListId.HasValue)
+        {
+            list = await _toDoListService.GetAsync(listCallback.ToDoListId.Value, ct);
+        }
+
         var user = (ToDoUser)context.Data["User"];
         var name = (string)context.Data["Name"];
-        context.Data.TryGetValue("List", out var listObj);
-        var list = listObj as ToDoList;
+        var deadline = (DateTime)context.Data["Deadline"];
 
         var task = await _toDoService.AddAsync(user, name, deadline, list, ct);
 
