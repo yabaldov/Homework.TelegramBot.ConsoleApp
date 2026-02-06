@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
+using Homework.TelegramBot.ConsoleApp.TelegramBot.Dto;
 
 namespace Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
@@ -14,11 +16,13 @@ public class AddTaskScenario : IScenario
 {
     private readonly IUserService _userService;
     private readonly IToDoService _toDoService;
+    private readonly IToDoListService _toDoListService;
 
-    public AddTaskScenario(IUserService userService, IToDoService toDoService)
+    public AddTaskScenario(IUserService userService, IToDoService toDoService, IToDoListService toDoListService)
     {
         _userService = userService;
         _toDoService = toDoService;
+        _toDoListService = toDoListService;
     }
 
     public bool CanHandle(ScenarioType scenario)
@@ -30,22 +34,25 @@ public class AddTaskScenario : IScenario
         ITelegramBotClient bot,
         ScenarioContext context,
         Update update,
-        CancellationToken ct
-        )
+        CancellationToken ct)
     {
-        var chat = update.Message!.Chat;
-        var text = update.Message.Text?.Trim() ?? string.Empty;
+        var chatId = GetChatId(update);
 
         switch (context.CurrentStep)
         {
             case null:
-                return await HandleStartStepAsync(bot, chat, context, ct);
+                return await HandleStartStepAsync(bot, chatId, context, ct);
+
+            case "List":
+                return await HandleListStepAsync(bot, chatId, context, update, ct);
 
             case "Name":
-                return await HandleNameStepAsync(bot, chat, context, text, ct);
+                var text = update.Message?.Text?.Trim() ?? string.Empty;
+                return await HandleNameStepAsync(bot, chatId, context, text, ct);
 
             case "Deadline":
-                return await HandleDeadlineStepAsync(bot, chat, context, text, ct);
+                var deadlineText = update.Message?.Text?.Trim() ?? string.Empty;
+                return await HandleDeadlineStepAsync(bot, chatId, context, deadlineText, ct);
 
             default:
                 return ScenarioResult.Completed;
@@ -54,22 +61,72 @@ public class AddTaskScenario : IScenario
 
     private async Task<ScenarioResult> HandleStartStepAsync(
         ITelegramBotClient bot,
-        Chat chat,
+        long chatId,
         ScenarioContext context,
         CancellationToken ct)
     {
         var user = await _userService.GetUserAsync(context.UserId, ct);
         if (user == null)
         {
-            await bot.SendMessage(chat.Id, "Пользователь не найден. Используйте /start для регистрации.", cancellationToken: ct);
+            await bot.SendMessage(chatId, "Пользователь не найден. Используйте /start для регистрации.", cancellationToken: ct);
             return ScenarioResult.Completed;
         }
 
         context.Data["User"] = user;
+
+        var lists = await _toDoListService.GetUserListsAsync(user.UserId, ct);
+
+        var buttons = new List<List<InlineKeyboardButton>>
+        {
+            new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new ToDoListCallbackDto { Action = "selectlist", ToDoListId = null }.ToString()) }
+        };
+
+        foreach (var list in lists)
+        {
+            buttons.Add(new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "selectlist", ToDoListId = list.Id }.ToString())
+            });
+        }
+
+        var inlineKeyboard = new InlineKeyboardMarkup(buttons);
+
+        await bot.SendMessage(
+            chatId,
+            "Выберите список для задачи:",
+            replyMarkup: inlineKeyboard,
+            cancellationToken: ct);
+
+        context.CurrentStep = "List";
+        return ScenarioResult.Transition;
+    }
+
+    private async Task<ScenarioResult> HandleListStepAsync(
+        ITelegramBotClient bot,
+        long chatId,
+        ScenarioContext context,
+        Update update,
+        CancellationToken ct)
+    {
+        var callbackData = update.CallbackQuery?.Data;
+        if (string.IsNullOrEmpty(callbackData))
+            return ScenarioResult.Transition;
+
+        var listCallback = ToDoListCallbackDto.FromString(callbackData);
+
+        if (listCallback.ToDoListId.HasValue)
+        {
+            var list = await _toDoListService.GetAsync(listCallback.ToDoListId.Value, ct);
+            if (list != null)
+            {
+                context.Data["List"] = list;
+            }
+        }
+
         context.CurrentStep = "Name";
 
         await bot.SendMessage(
-            chat.Id,
+            chatId,
             "Введите название задачи:",
             replyMarkup: GetCancelKeyboard(),
             cancellationToken: ct);
@@ -79,7 +136,7 @@ public class AddTaskScenario : IScenario
 
     private async Task<ScenarioResult> HandleNameStepAsync(
         ITelegramBotClient bot,
-        Chat chat,
+        long chatId,
         ScenarioContext context,
         string name,
         CancellationToken ct)
@@ -87,7 +144,7 @@ public class AddTaskScenario : IScenario
         if (string.IsNullOrWhiteSpace(name))
         {
             await bot.SendMessage(
-                chat.Id,
+                chatId,
                 "Название задачи не может быть пустым. Введите название задачи:",
                 replyMarkup: GetCancelKeyboard(),
                 cancellationToken: ct);
@@ -98,7 +155,7 @@ public class AddTaskScenario : IScenario
         context.CurrentStep = "Deadline";
 
         await bot.SendMessage(
-            chat.Id,
+            chatId,
             "Введите срок выполнения (дд.мм.гггг):",
             replyMarkup: GetCancelKeyboard(),
             cancellationToken: ct);
@@ -108,7 +165,7 @@ public class AddTaskScenario : IScenario
 
     private async Task<ScenarioResult> HandleDeadlineStepAsync(
         ITelegramBotClient bot,
-        Chat chat,
+        long chatId,
         ScenarioContext context,
         string deadlineText,
         CancellationToken ct)
@@ -116,7 +173,7 @@ public class AddTaskScenario : IScenario
         if (!DateTime.TryParseExact(deadlineText, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var deadline))
         {
             await bot.SendMessage(
-                chat.Id,
+                chatId,
                 "Неверный формат даты. Введите срок выполнения в формате дд.мм.гггг:",
                 replyMarkup: GetCancelKeyboard(),
                 cancellationToken: ct);
@@ -126,7 +183,7 @@ public class AddTaskScenario : IScenario
         if (deadline.Date < DateTime.Today)
         {
             await bot.SendMessage(
-                chat.Id,
+                chatId,
                 "Срок выполнения не может быть в прошлом. Введите дату сегодня или в будущем:",
                 replyMarkup: GetCancelKeyboard(),
                 cancellationToken: ct);
@@ -135,15 +192,28 @@ public class AddTaskScenario : IScenario
 
         var user = (ToDoUser)context.Data["User"];
         var name = (string)context.Data["Name"];
-        var task = await _toDoService.AddAsync(user, name, deadline, list: null, ct);
+        context.Data.TryGetValue("List", out var listObj);
+        var list = listObj as ToDoList;
 
+        var task = await _toDoService.AddAsync(user, name, deadline, list, ct);
+
+        var listInfo = list != null ? $" (список: {list.Name})" : "";
         await bot.SendMessage(
-            chat.Id,
-            $"Задача \"{task.Name}\" добавлена. Срок: {task.Deadline:dd.MM.yyyy}",
+            chatId,
+            $"Задача \"{task.Name}\" добавлена{listInfo}. Срок: {task.Deadline:dd.MM.yyyy}",
             replyMarkup: GetMainKeyboard(),
             cancellationToken: ct);
 
         return ScenarioResult.Completed;
+    }
+
+    private static long GetChatId(Update update)
+    {
+        if (update.Message != null)
+            return update.Message.Chat.Id;
+        if (update.CallbackQuery?.Message != null)
+            return update.CallbackQuery.Message.Chat.Id;
+        return 0;
     }
 
     private static ReplyKeyboardMarkup GetCancelKeyboard()

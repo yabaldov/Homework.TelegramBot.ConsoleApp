@@ -80,7 +80,7 @@ namespace Homework.TelegramBot.ConsoleApp
             var scenarioContextRepository = new InMemoryScenarioContextRepository();
             var scenarios = new IScenario[]
             {
-                new AddTaskScenario(userService, toDoService),
+                new AddTaskScenario(userService, toDoService, toDoListService),
                 new AddListScenario(userService, toDoListService),
                 new DeleteListScenario(userService, toDoListService, toDoService)
             };
