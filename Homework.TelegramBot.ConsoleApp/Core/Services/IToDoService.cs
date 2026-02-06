@@ -15,5 +15,6 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
         Task DeleteAsync(Guid id, CancellationToken ct);
         Task<IReadOnlyList<ToDoItem>> FindAsync(ToDoUser user, string namePrefix, CancellationToken ct);
         Task<IReadOnlyList<ToDoItem>> GetByUserIdAndListAsync(Guid userId, Guid? listId, CancellationToken ct);
+        Task<ToDoItem?> GetAsync(Guid toDoItemId, CancellationToken ct);
     }
 }
