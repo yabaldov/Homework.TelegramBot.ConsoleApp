@@ -11,12 +11,15 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
 using Homework.TelegramBot.ConsoleApp.Core.Services;
 using Homework.TelegramBot.ConsoleApp.TelegramBot.Dto;
+using Homework.TelegramBot.ConsoleApp.Helpers;
 using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
 namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 {
     public class UpdateHandler : IUpdateHandler
     {
+        private static readonly int _pageSize = 5;
+
         private readonly IUserService _userService;
         private readonly IToDoService _toDoService;
         private readonly IToDoReportService _toDoReportService;
@@ -141,8 +144,8 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 switch (callback.Action)
                 {
                     case "show":
-                        var listCallback = ToDoListCallbackDto.FromString(query.Data);
-                        await HandleShowTasksByListAsync(botClient, chat, user, listCallback.ToDoListId, ct);
+                        var listCallback = PagedListCallbackDto.FromString(query.Data);
+                        await HandleShowTasksByListAsync(botClient, chat, query.Message.MessageId, user, listCallback, ct);
                         break;
                     case "addlist":
                         await StartScenarioAsync(botClient, user, update, ScenarioType.AddList, ct);
@@ -172,28 +175,24 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             }
         }
 
-        private async Task HandleShowTasksByListAsync(ITelegramBotClient botClient, Chat chat, ToDoUser user, Guid? listId, CancellationToken ct)
+        private async Task HandleShowTasksByListAsync(ITelegramBotClient botClient, Chat chat, int messageId, ToDoUser user, PagedListCallbackDto listDto, CancellationToken ct)
         {
-            var tasks = await _toDoService.GetByUserIdAndListAsync(user.UserId, listId, ct);
+            var tasks = await _toDoService.GetByUserIdAndListAsync(user.UserId, listDto.ToDoListId, ct);
 
             if (tasks.Count == 0)
             {
-                await botClient.SendMessage(chat.Id, "В этом списке нет задач.", cancellationToken: ct);
+                await botClient.EditMessageText(chat.Id, messageId, "Задач нет", cancellationToken: ct);
                 return;
             }
 
-            var buttons = new List<List<InlineKeyboardButton>>();
-            foreach (var task in tasks)
-            {
-                var callbackData = new ToDoItemCallbackDto { Action = "showtask", ToDoItemId = task.Id }.ToString();
-                buttons.Add(new List<InlineKeyboardButton>
-                {
-                    InlineKeyboardButton.WithCallbackData($"({task.State}) {task.Name}", callbackData)
-                });
-            }
+            var callbackData = tasks
+                .Select(t => new KeyValuePair<string, string>(
+                    $"({t.State}) {t.Name}",
+                    new ToDoItemCallbackDto { Action = "showtask", ToDoItemId = t.Id }.ToString()))
+                .ToList();
 
-            var inlineKeyboard = new InlineKeyboardMarkup(buttons);
-            await botClient.SendMessage(chat.Id, "Задачи:", replyMarkup: inlineKeyboard, cancellationToken: ct);
+            var inlineKeyboard = BuildPagedButtons(callbackData, listDto);
+            await botClient.EditMessageText(chat.Id, messageId, "Задачи:", replyMarkup: inlineKeyboard, cancellationToken: ct);
         }
 
         private async Task StartScenarioAsync(ITelegramBotClient botClient, ToDoUser user, Update update, ScenarioType scenarioType, CancellationToken ct)
@@ -289,14 +288,14 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             var buttons = new List<List<InlineKeyboardButton>>
             {
-                new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new ToDoListCallbackDto { Action = "show", ToDoListId = null }.ToString()) }
+                new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new PagedListCallbackDto { Action = "show", ToDoListId = null, Page = 0 }.ToString()) }
             };
 
             foreach (var list in lists)
             {
                 buttons.Add(new List<InlineKeyboardButton>
                 {
-                    InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "show", ToDoListId = list.Id }.ToString())
+                    InlineKeyboardButton.WithCallbackData(list.Name, new PagedListCallbackDto { Action = "show", ToDoListId = list.Id, Page = 0 }.ToString())
                 });
             }
 
@@ -451,6 +450,41 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
             await _contextRepository.ResetContext(telegramUserId, ct);
             await SendMessageAsync(botClient, chat, "Сценарий отменён.", user != null, ct);
+        }
+
+        private static InlineKeyboardMarkup BuildPagedButtons(
+            IReadOnlyList<KeyValuePair<string, string>> callbackData,
+            PagedListCallbackDto listDto)
+        {
+            var totalPages = (int)Math.Ceiling((double)callbackData.Count / _pageSize);
+            var pageItems = callbackData.GetBatchByNumber(_pageSize, listDto.Page);
+
+            var buttons = new List<List<InlineKeyboardButton>>();
+            foreach (var item in pageItems)
+            {
+                buttons.Add(new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData(item.Key, item.Value)
+                });
+            }
+
+            var navigationRow = new List<InlineKeyboardButton>();
+            if (listDto.Page > 0)
+            {
+                navigationRow.Add(InlineKeyboardButton.WithCallbackData("⬅️",
+                    new PagedListCallbackDto { Action = listDto.Action, ToDoListId = listDto.ToDoListId, Page = listDto.Page - 1 }.ToString()));
+            }
+            if (listDto.Page < totalPages - 1)
+            {
+                navigationRow.Add(InlineKeyboardButton.WithCallbackData("➡️",
+                    new PagedListCallbackDto { Action = listDto.Action, ToDoListId = listDto.ToDoListId, Page = listDto.Page + 1 }.ToString()));
+            }
+            if (navigationRow.Count > 0)
+            {
+                buttons.Add(navigationRow);
+            }
+
+            return new InlineKeyboardMarkup(buttons);
         }
 
         private static ReplyKeyboardMarkup GetKeyboard(bool isRegistered)
