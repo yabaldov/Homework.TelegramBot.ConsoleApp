@@ -11,8 +11,9 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Entities
         public DateTime Deadline { get; }
         public ToDoItemState State { get; set; }
         public DateTime? StateChangedAt { get; set; }
+        public ToDoList? List { get; }
 
-        public ToDoItem(ToDoUser user, string name, DateTime deadline)
+        public ToDoItem(ToDoUser user, string name, DateTime deadline, ToDoList? list = null)
         {
             Id = Guid.NewGuid();
             User = user;
@@ -21,10 +22,11 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Entities
             Deadline = deadline;
             State = ToDoItemState.Active;
             StateChangedAt = null;
+            List = list;
         }
 
         // Конструктор для восстановления из файла
-        public ToDoItem(Guid id, ToDoUser user, string name, DateTime createdAt, DateTime deadline, ToDoItemState state, DateTime? stateChangedAt)
+        public ToDoItem(Guid id, ToDoUser user, string name, DateTime createdAt, DateTime deadline, ToDoItemState state, DateTime? stateChangedAt, ToDoList? list = null)
         {
             Id = id;
             User = user;
@@ -33,6 +35,7 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Entities
             Deadline = deadline;
             State = state;
             StateChangedAt = stateChangedAt;
+            List = list;
         }
     }
 }

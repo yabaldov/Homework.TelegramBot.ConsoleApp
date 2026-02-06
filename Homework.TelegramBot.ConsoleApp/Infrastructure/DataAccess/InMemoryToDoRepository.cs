@@ -70,5 +70,11 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             var result = _items.Where(t => t.User.UserId == userId && predicate(t)).ToList();
             return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
         }
+
+        public Task<IReadOnlyList<ToDoItem>> GetByUserIdAndListAsync(Guid userId, Guid? listId, CancellationToken ct)
+        {
+            var result = _items.Where(t => t.User.UserId == userId && t.List?.Id == listId).ToList();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
+        }
     }
 }

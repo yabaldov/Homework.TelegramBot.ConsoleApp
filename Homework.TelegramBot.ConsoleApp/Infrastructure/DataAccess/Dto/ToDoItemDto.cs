@@ -7,6 +7,7 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess.Dto
     {
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
+        public Guid? ListId { get; set; }
         public string Name { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime Deadline { get; set; }
@@ -19,6 +20,7 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess.Dto
             {
                 Id = item.Id,
                 UserId = item.User.UserId,
+                ListId = item.List?.Id,
                 Name = item.Name,
                 CreatedAt = item.CreatedAt,
                 Deadline = item.Deadline,
@@ -27,9 +29,9 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess.Dto
             };
         }
 
-        public ToDoItem ToEntity(ToDoUser user)
+        public ToDoItem ToEntity(ToDoUser user, ToDoList? list = null)
         {
-            return new ToDoItem(Id, user, Name, CreatedAt, Deadline, State, StateChangedAt);
+            return new ToDoItem(Id, user, Name, CreatedAt, Deadline, State, StateChangedAt, list);
         }
     }
 }

@@ -13,5 +13,15 @@ public enum ScenarioType
     /// <summary>
     /// Сценарий добавления задачи.
     /// </summary>
-    AddTask
+    AddTask,
+
+    /// <summary>
+    /// Сценарий добавления списка.
+    /// </summary>
+    AddList,
+
+    /// <summary>
+    /// Сценарий удаления списка.
+    /// </summary>
+    DeleteList
 }

@@ -31,7 +31,7 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
             return _toDoRepository.GetActiveByUserIdAsync(userId, ct);
         }
 
-        public async Task<ToDoItem> AddAsync(ToDoUser user, string name, DateTime deadline, CancellationToken ct)
+        public async Task<ToDoItem> AddAsync(ToDoUser user, string name, DateTime deadline, ToDoList? list, CancellationToken ct)
         {
             if (await _toDoRepository.CountActiveAsync(user.UserId, ct) >= _taskCountLimit)
             {
@@ -48,7 +48,7 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
                 throw new DuplicateTaskException(name);
             }
 
-            var task = new ToDoItem(user, name, deadline);
+            var task = new ToDoItem(user, name, deadline, list);
             await _toDoRepository.AddAsync(task, ct);
             return task;
         }
@@ -72,6 +72,11 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
         public Task<IReadOnlyList<ToDoItem>> FindAsync(ToDoUser user, string namePrefix, CancellationToken ct)
         {
             return _toDoRepository.FindAsync(user.UserId, item => item.Name.StartsWith(namePrefix), ct);
+        }
+
+        public Task<IReadOnlyList<ToDoItem>> GetByUserIdAndListAsync(Guid userId, Guid? listId, CancellationToken ct)
+        {
+            return _toDoRepository.GetByUserIdAndListAsync(userId, listId, ct);
         }
     }
 }
