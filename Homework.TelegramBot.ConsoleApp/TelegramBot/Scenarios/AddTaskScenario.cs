@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -150,13 +151,10 @@ public class AddTaskScenario : IScenario
             new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new ToDoListCallbackDto { Action = "selectlist", ToDoListId = null }.ToString()) }
         };
 
-        foreach (var list in lists)
+        buttons.AddRange(lists.Select(list => new List<InlineKeyboardButton>
         {
-            buttons.Add(new List<InlineKeyboardButton>
-            {
-                InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "selectlist", ToDoListId = list.Id }.ToString())
-            });
-        }
+            InlineKeyboardButton.WithCallbackData(list.Name, new ToDoListCallbackDto { Action = "selectlist", ToDoListId = list.Id }.ToString())
+        }));
 
         var inlineKeyboard = new InlineKeyboardMarkup(buttons);
 

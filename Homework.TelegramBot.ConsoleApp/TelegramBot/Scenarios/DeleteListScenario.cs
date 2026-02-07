@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -80,17 +81,12 @@ public class DeleteListScenario : IScenario
             return ScenarioResult.Completed;
         }
 
-        var buttons = new List<List<InlineKeyboardButton>>();
-
-        foreach (var list in lists)
+        var buttons = lists.Select(list => new List<InlineKeyboardButton>
         {
-            buttons.Add(new List<InlineKeyboardButton>
-            {
-                InlineKeyboardButton.WithCallbackData(
-                    list.Name,
-                    new ToDoListCallbackDto { Action = "deletelist", ToDoListId = list.Id }.ToString())
-            });
-        }
+            InlineKeyboardButton.WithCallbackData(
+                list.Name,
+                new ToDoListCallbackDto { Action = "deletelist", ToDoListId = list.Id }.ToString())
+        }).ToList();
 
         var inlineKeyboard = new InlineKeyboardMarkup(buttons);
 

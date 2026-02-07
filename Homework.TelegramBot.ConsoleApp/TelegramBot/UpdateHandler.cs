@@ -224,13 +224,13 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
         private static void AppendCompletedButton(InlineKeyboardMarkup markup, Guid? listId)
         {
-            var rows = markup.InlineKeyboard.ToList();
-            rows.Add(new[]
-            {
-                InlineKeyboardButton.WithCallbackData("☑️Посмотреть выполненные",
-                    new PagedListCallbackDto { Action = "show_completed", ToDoListId = listId, Page = 0 }.ToString())
-            });
-            markup.InlineKeyboard = rows;
+            markup.InlineKeyboard = markup.InlineKeyboard
+                .Append(new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("☑️Посмотреть выполненные",
+                        new PagedListCallbackDto { Action = "show_completed", ToDoListId = listId, Page = 0 }.ToString())
+                })
+                .ToList();
         }
 
         private async Task StartScenarioAsync(ITelegramBotClient botClient, ToDoUser user, Update update, ScenarioType scenarioType, CancellationToken ct)
@@ -329,13 +329,10 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 new() { InlineKeyboardButton.WithCallbackData("📌Без списка", new PagedListCallbackDto { Action = "show", ToDoListId = null, Page = 0 }.ToString()) }
             };
 
-            foreach (var list in lists)
+            buttons.AddRange(lists.Select(list => new List<InlineKeyboardButton>
             {
-                buttons.Add(new List<InlineKeyboardButton>
-                {
-                    InlineKeyboardButton.WithCallbackData(list.Name, new PagedListCallbackDto { Action = "show", ToDoListId = list.Id, Page = 0 }.ToString())
-                });
-            }
+                InlineKeyboardButton.WithCallbackData(list.Name, new PagedListCallbackDto { Action = "show", ToDoListId = list.Id, Page = 0 }.ToString())
+            }));
 
             buttons.Add(new List<InlineKeyboardButton>
             {
@@ -392,13 +389,10 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                 return;
             }
 
-            var message = "Найденные задачи:\n";
-            foreach (var task in tasks)
-            {
-                message += $"{task.Name} - {task.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{task.Id}`\n";
-            }
+            var message = "Найденные задачи:\n" +
+                string.Join("\n", tasks.Select(t => $"{t.Name} - {t.CreatedAt:dd.MM.yyyy HH:mm:ss} - `{t.Id}`"));
 
-            await SendMessageAsync(botClient, chat, message.TrimEnd(), true, ct);
+            await SendMessageAsync(botClient, chat, message, true, ct);
         }
 
         private async Task HandleAddTaskAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, Update update, CancellationToken ct)
@@ -495,14 +489,12 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             var totalPages = (int)Math.Ceiling((double)callbackData.Count / _pageSize);
             var pageItems = callbackData.GetBatchByNumber(_pageSize, listDto.Page);
 
-            var buttons = new List<List<InlineKeyboardButton>>();
-            foreach (var item in pageItems)
-            {
-                buttons.Add(new List<InlineKeyboardButton>
+            var buttons = pageItems
+                .Select(item => new List<InlineKeyboardButton>
                 {
                     InlineKeyboardButton.WithCallbackData(item.Key, item.Value)
-                });
-            }
+                })
+                .ToList();
 
             var navigationRow = new List<InlineKeyboardButton>();
             if (listDto.Page > 0)
