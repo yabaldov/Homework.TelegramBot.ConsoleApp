@@ -147,6 +147,10 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         var listCallback = PagedListCallbackDto.FromString(query.Data);
                         await HandleShowTasksByListAsync(botClient, chat, query.Message.MessageId, user, listCallback, ct);
                         break;
+                    case "show_completed":
+                        var completedCallback = PagedListCallbackDto.FromString(query.Data);
+                        await HandleShowCompletedTasksAsync(botClient, chat, query.Message.MessageId, user, completedCallback, ct);
+                        break;
                     case "addlist":
                         await StartScenarioAsync(botClient, user, update, ScenarioType.AddList, ct);
                         break;
@@ -177,22 +181,56 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
 
         private async Task HandleShowTasksByListAsync(ITelegramBotClient botClient, Chat chat, int messageId, ToDoUser user, PagedListCallbackDto listDto, CancellationToken ct)
         {
-            var tasks = await _toDoService.GetByUserIdAndListAsync(user.UserId, listDto.ToDoListId, ct);
+            var allTasks = await _toDoService.GetByUserIdAndListAsync(user.UserId, listDto.ToDoListId, ct);
+            var activeTasks = allTasks.Where(t => t.State == ToDoItemState.Active).ToList();
 
-            if (tasks.Count == 0)
+            if (activeTasks.Count == 0)
             {
                 await botClient.EditMessageText(chat.Id, messageId, "Задач нет", cancellationToken: ct);
                 return;
             }
 
-            var callbackData = tasks
+            var callbackData = activeTasks
                 .Select(t => new KeyValuePair<string, string>(
-                    $"({t.State}) {t.Name}",
+                    t.Name,
                     new ToDoItemCallbackDto { Action = "showtask", ToDoItemId = t.Id }.ToString()))
                 .ToList();
 
             var inlineKeyboard = BuildPagedButtons(callbackData, listDto);
+            AppendCompletedButton(inlineKeyboard, listDto.ToDoListId);
             await botClient.EditMessageText(chat.Id, messageId, "Задачи:", replyMarkup: inlineKeyboard, cancellationToken: ct);
+        }
+
+        private async Task HandleShowCompletedTasksAsync(ITelegramBotClient botClient, Chat chat, int messageId, ToDoUser user, PagedListCallbackDto listDto, CancellationToken ct)
+        {
+            var allTasks = await _toDoService.GetByUserIdAndListAsync(user.UserId, listDto.ToDoListId, ct);
+            var completedTasks = allTasks.Where(t => t.State == ToDoItemState.Completed).ToList();
+
+            if (completedTasks.Count == 0)
+            {
+                await botClient.EditMessageText(chat.Id, messageId, "Задач нет", cancellationToken: ct);
+                return;
+            }
+
+            var callbackData = completedTasks
+                .Select(t => new KeyValuePair<string, string>(
+                    $"☑️ {t.Name}",
+                    new ToDoItemCallbackDto { Action = "showtask", ToDoItemId = t.Id }.ToString()))
+                .ToList();
+
+            var inlineKeyboard = BuildPagedButtons(callbackData, listDto);
+            await botClient.EditMessageText(chat.Id, messageId, "Выполненные задачи:", replyMarkup: inlineKeyboard, cancellationToken: ct);
+        }
+
+        private static void AppendCompletedButton(InlineKeyboardMarkup markup, Guid? listId)
+        {
+            var rows = markup.InlineKeyboard.ToList();
+            rows.Add(new[]
+            {
+                InlineKeyboardButton.WithCallbackData("☑️Посмотреть выполненные",
+                    new PagedListCallbackDto { Action = "show_completed", ToDoListId = listId, Page = 0 }.ToString())
+            });
+            markup.InlineKeyboard = rows;
         }
 
         private async Task StartScenarioAsync(ITelegramBotClient botClient, ToDoUser user, Update update, ScenarioType scenarioType, CancellationToken ct)
