@@ -82,7 +82,8 @@ namespace Homework.TelegramBot.ConsoleApp
             {
                 new AddTaskScenario(userService, toDoService, toDoListService),
                 new AddListScenario(userService, toDoListService),
-                new DeleteListScenario(userService, toDoListService, toDoService)
+                new DeleteListScenario(userService, toDoListService, toDoService),
+                new DeleteTaskScenario(toDoService)
             };
 
             var updateHandler = new UpdateHandler(
@@ -109,8 +110,6 @@ namespace Homework.TelegramBot.ConsoleApp
                 new BotCommand { Command = "info", Description = "Информация о боте" },
                 new BotCommand { Command = "addtask", Description = "Добавить задачу" },
                 new BotCommand { Command = "show", Description = "Показать списки и задачи" },
-                new BotCommand { Command = "removetask", Description = "Удалить задачу" },
-                new BotCommand { Command = "completetask", Description = "Завершить задачу" },
                 new BotCommand { Command = "find", Description = "Найти задачу по началу названия" },
                 new BotCommand { Command = "report", Description = "Статистика" }
             }, cancellationToken: cts.Token

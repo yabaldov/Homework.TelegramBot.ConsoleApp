@@ -167,7 +167,7 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
                         break;
                     case "deletetask":
                         var deleteCallback = ToDoItemCallbackDto.FromString(query.Data);
-                        await HandleDeleteTaskByCallbackAsync(botClient, chat, deleteCallback.ToDoItemId, ct);
+                        await StartDeleteTaskScenarioAsync(botClient, user, update, deleteCallback.ToDoItemId, ct);
                         break;
                 }
 
@@ -458,17 +458,15 @@ namespace Homework.TelegramBot.ConsoleApp.TelegramBot
             await botClient.SendMessage(chat.Id, $"Задача \"{task.Name}\" завершена.", cancellationToken: ct);
         }
 
-        private async Task HandleDeleteTaskByCallbackAsync(ITelegramBotClient botClient, Chat chat, Guid toDoItemId, CancellationToken ct)
+        private async Task StartDeleteTaskScenarioAsync(ITelegramBotClient botClient, ToDoUser user, Update update, Guid toDoItemId, CancellationToken ct)
         {
-            var task = await _toDoService.GetAsync(toDoItemId, ct);
-            if (task == null)
+            var context = new ScenarioContext(ScenarioType.DeleteTask)
             {
-                await botClient.SendMessage(chat.Id, "Задача не найдена.", cancellationToken: ct);
-                return;
-            }
+                UserId = user.TelegramUserId
+            };
+            context.Data["ToDoItemId"] = toDoItemId;
 
-            await _toDoService.DeleteAsync(toDoItemId, ct);
-            await botClient.SendMessage(chat.Id, $"Задача \"{task.Name}\" удалена.", cancellationToken: ct);
+            await ProcessScenarioAsync(botClient, context, update, ct);
         }
 
         private async Task HandleExitAsync(ITelegramBotClient botClient, Chat chat, ToDoUser? user, CancellationToken ct)
