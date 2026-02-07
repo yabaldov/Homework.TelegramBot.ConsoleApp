@@ -231,25 +231,19 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
                 return;
             }
 
-            var userFolders = Directory.GetDirectories(_basePath);
+            var entries = Directory.GetDirectories(_basePath)
+                .Where(folder => Guid.TryParse(Path.GetFileName(folder), out _))
+                .SelectMany(folder =>
+                {
+                    var userId = Guid.Parse(Path.GetFileName(folder));
+                    return Directory.GetFiles(folder, "*.json")
+                        .Where(file => Guid.TryParse(Path.GetFileNameWithoutExtension(file), out _))
+                        .Select(file => (itemId: Guid.Parse(Path.GetFileNameWithoutExtension(file)), userId));
+                });
 
-            foreach (var userFolder in userFolders)
+            foreach (var (itemId, userId) in entries)
             {
-                var userIdString = Path.GetFileName(userFolder);
-                if (!Guid.TryParse(userIdString, out var userId))
-                {
-                    continue;
-                }
-
-                var itemFiles = Directory.GetFiles(userFolder, "*.json");
-                foreach (var itemFile in itemFiles)
-                {
-                    var itemIdString = Path.GetFileNameWithoutExtension(itemFile);
-                    if (Guid.TryParse(itemIdString, out var itemId))
-                    {
-                        _index[itemId] = userId;
-                    }
-                }
+                _index[itemId] = userId;
             }
         }
 

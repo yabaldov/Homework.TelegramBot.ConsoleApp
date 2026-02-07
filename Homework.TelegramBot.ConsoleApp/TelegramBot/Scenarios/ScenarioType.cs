@@ -23,5 +23,10 @@ public enum ScenarioType
     /// <summary>
     /// Сценарий удаления списка.
     /// </summary>
-    DeleteList
+    DeleteList,
+
+    /// <summary>
+    /// Сценарий удаления задачи.
+    /// </summary>
+    DeleteTask
 }
