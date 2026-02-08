@@ -34,7 +34,13 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
                 throw new ArgumentException($"Список с названием \"{name}\" уже существует.");
             }
 
-            var list = new ToDoList(user, name);
+            var list = new ToDoList
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                User = user,
+                CreatedAt = DateTime.UtcNow
+            };
             await _toDoListRepository.AddAsync(list, ct);
             return list;
         }

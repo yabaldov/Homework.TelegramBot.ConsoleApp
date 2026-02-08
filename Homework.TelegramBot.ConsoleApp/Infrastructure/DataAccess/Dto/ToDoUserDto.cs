@@ -23,7 +23,13 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess.Dto
 
         public ToDoUser ToEntity()
         {
-            return new ToDoUser(UserId, TelegramUserId, TelegramUserName, RegisteredAt);
+            return new ToDoUser
+            {
+                UserId = UserId,
+                TelegramUserId = TelegramUserId,
+                TelegramUserName = TelegramUserName,
+                RegisteredAt = RegisteredAt
+            };
         }
     }
 }

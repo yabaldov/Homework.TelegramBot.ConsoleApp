@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
@@ -16,7 +17,13 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
 
         public async Task<ToDoUser> RegisterUserAsync(long telegramUserId, string telegramUserName, CancellationToken ct)
         {
-            var user = new ToDoUser(telegramUserId, telegramUserName);
+            var user = new ToDoUser
+            {
+                UserId = Guid.NewGuid(),
+                TelegramUserId = telegramUserId,
+                TelegramUserName = telegramUserName,
+                RegisteredAt = DateTime.UtcNow
+            };
             await _userRepository.AddAsync(user, ct);
             return user;
         }
