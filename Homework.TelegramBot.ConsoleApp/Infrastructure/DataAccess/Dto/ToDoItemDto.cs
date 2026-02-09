@@ -31,7 +31,17 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess.Dto
 
         public ToDoItem ToEntity(ToDoUser user, ToDoList? list = null)
         {
-            return new ToDoItem(Id, user, Name, CreatedAt, Deadline, State, StateChangedAt, list);
+            return new ToDoItem
+            {
+                Id = Id,
+                User = user,
+                Name = Name,
+                CreatedAt = CreatedAt,
+                Deadline = Deadline,
+                State = State,
+                StateChangedAt = StateChangedAt,
+                List = list
+            };
         }
     }
 }

@@ -23,7 +23,13 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess.Dto
 
         public ToDoList ToEntity(ToDoUser user)
         {
-            return new ToDoList(Id, Name, user, CreatedAt);
+            return new ToDoList
+            {
+                Id = Id,
+                Name = Name,
+                User = user,
+                CreatedAt = CreatedAt
+            };
         }
     }
 }

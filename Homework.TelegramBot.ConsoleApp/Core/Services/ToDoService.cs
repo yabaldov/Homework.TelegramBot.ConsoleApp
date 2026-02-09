@@ -48,7 +48,17 @@ namespace Homework.TelegramBot.ConsoleApp.Core.Services
                 throw new DuplicateTaskException(name);
             }
 
-            var task = new ToDoItem(user, name, deadline, list);
+            var task = new ToDoItem
+            {
+                Id = Guid.NewGuid(),
+                User = user,
+                Name = name,
+                CreatedAt = DateTime.UtcNow,
+                Deadline = deadline,
+                State = ToDoItemState.Active,
+                StateChangedAt = null,
+                List = list
+            };
             await _toDoRepository.AddAsync(task, ct);
             return task;
         }
