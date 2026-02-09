@@ -9,6 +9,7 @@ using Homework.TelegramBot.ConsoleApp.Core.Services;
 using Homework.TelegramBot.ConsoleApp.Core.Validation;
 using Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess;
 using Homework.TelegramBot.ConsoleApp.TelegramBot;
+using dotenv.net;
 using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 
 namespace Homework.TelegramBot.ConsoleApp
@@ -17,6 +18,8 @@ namespace Homework.TelegramBot.ConsoleApp
     {
         static async Task Main(string[] args)
         {
+            DotEnv.Load();
+
             var token = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN")
                 ?? throw new InvalidOperationException("Не задана переменная окружения TELEGRAM_BOT_TOKEN");
 
