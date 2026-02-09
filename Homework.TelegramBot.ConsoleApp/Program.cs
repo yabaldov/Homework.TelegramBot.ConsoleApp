@@ -67,10 +67,14 @@ namespace Homework.TelegramBot.ConsoleApp
                 }
             }
 
-            var userRepository = new FileUserRepository("Data/Users");
-            var toDoListRepository = new FileToDoListRepository("Data/ToDoLists", userRepository);
-            var toDoRepository = new FileToDoRepository("Data/ToDos", userRepository);
-            toDoRepository.SetToDoListRepository(toDoListRepository);
+            var dbPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD")
+                ?? throw new InvalidOperationException("Не задана переменная окружения POSTGRES_PASSWORD");
+            var connectionString = $"Host=localhost;Port=5432;Database=ToDoList;Username=qa_admin;Password={dbPassword}";
+
+            var factory = new DataContextFactory(connectionString);
+            var userRepository = new SqlUserRepository(factory);
+            var toDoListRepository = new SqlToDoListRepository(factory);
+            var toDoRepository = new SqlToDoRepository(factory);
 
             var userService = new UserService(userRepository);
             var toDoListService = new ToDoListService(toDoListRepository);
