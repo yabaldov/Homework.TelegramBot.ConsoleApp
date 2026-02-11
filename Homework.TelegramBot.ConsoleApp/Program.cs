@@ -11,6 +11,7 @@ using Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess;
 using Homework.TelegramBot.ConsoleApp.TelegramBot;
 using dotenv.net;
 using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
+using Homework.TelegramBot.ConsoleApp.BackgroundTasks;
 
 namespace Homework.TelegramBot.ConsoleApp
 {
@@ -104,6 +105,13 @@ namespace Homework.TelegramBot.ConsoleApp
 
             var botClient = new TelegramBotClient(token);
 
+            using var backgroundTaskRunner = new BackgroundTaskRunner();
+            backgroundTaskRunner.AddTask(new ResetScenarioBackgroundTask(
+                TimeSpan.FromHours(1),
+                scenarioContextRepository,
+                botClient));
+            backgroundTaskRunner.StartTasks(cts.Token);
+
             var receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery },
@@ -134,6 +142,7 @@ namespace Homework.TelegramBot.ConsoleApp
                 var key = Console.ReadKey(true);
                 if (key.Key == ConsoleKey.A)
                 {
+                    await backgroundTaskRunner.StopTasks(CancellationToken.None);
                     cts.Cancel();
                     break;
                 }
