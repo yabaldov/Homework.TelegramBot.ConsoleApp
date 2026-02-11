@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,5 +27,11 @@ public class InMemoryScenarioContextRepository : IScenarioContextRepository
     {
         _contexts.TryRemove(userId, out _);
         return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<ScenarioContext>> GetContexts(CancellationToken ct)
+    {
+        IReadOnlyList<ScenarioContext> contexts = _contexts.Values.ToList();
+        return Task.FromResult(contexts);
     }
 }

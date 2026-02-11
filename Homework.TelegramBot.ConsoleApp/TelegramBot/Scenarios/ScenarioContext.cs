@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
@@ -12,9 +13,12 @@ public class ScenarioContext
 
     public Dictionary<string, object> Data { get; set; }
 
+    public DateTime CreatedAt { get; }
+
     public ScenarioContext(ScenarioType scenario)
     {
         CurrentScenario = scenario;
         Data = new Dictionary<string, object>();
+        CreatedAt = DateTime.UtcNow;
     }
 }
