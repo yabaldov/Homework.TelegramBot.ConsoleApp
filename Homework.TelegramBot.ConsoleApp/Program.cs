@@ -119,6 +119,10 @@ namespace Homework.TelegramBot.ConsoleApp
                 notificationService,
                 userRepository,
                 toDoRepository));
+            backgroundTaskRunner.AddTask(new TodayBackgroundTask(
+                notificationService,
+                userRepository,
+                toDoRepository));
             backgroundTaskRunner.StartTasks(cts.Token);
 
             var receiverOptions = new ReceiverOptions
