@@ -139,6 +139,12 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             return await GetItemsByUserIdAsync(userId, item => item.List?.Id == listId, ct);
         }
 
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
+        {
+            return await GetItemsByUserIdAsync(userId,
+                item => item.State == ToDoItemState.Active && item.Deadline >= from && item.Deadline < to, ct);
+        }
+
         private async Task<List<ToDoItem>> GetItemsByUserIdAsync(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken ct)
         {
             var result = new List<ToDoItem>();

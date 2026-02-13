@@ -108,5 +108,17 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
                 .ToListAsync(ct);
             return models.Select(ModelMapper.MapFromModel).ToList();
         }
+
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
+        {
+            using var db = _factory.CreateDataContext();
+            var models = await ItemsWithIncludes(db)
+                .Where(i => i.UserId == userId
+                    && i.State == ToDoItemState.Active
+                    && i.Deadline >= from
+                    && i.Deadline < to)
+                .ToListAsync(ct);
+            return models.Select(ModelMapper.MapFromModel).ToList();
+        }
     }
 }

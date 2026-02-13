@@ -12,6 +12,7 @@ using Homework.TelegramBot.ConsoleApp.TelegramBot;
 using dotenv.net;
 using Homework.TelegramBot.ConsoleApp.TelegramBot.Scenarios;
 using Homework.TelegramBot.ConsoleApp.BackgroundTasks;
+using Homework.TelegramBot.ConsoleApp.Infrastructure;
 
 namespace Homework.TelegramBot.ConsoleApp
 {
@@ -84,6 +85,7 @@ namespace Homework.TelegramBot.ConsoleApp
             var toDoListService = new ToDoListService(toDoListRepository);
             var toDoService = new ToDoService(toDoRepository, tasksLimit, taskLengthLimit);
             var toDoReportService = new ToDoReportService(toDoRepository);
+            var notificationService = new NotificationService(factory);
 
             var scenarioContextRepository = new InMemoryScenarioContextRepository();
             var scenarios = new IScenario[]
@@ -110,6 +112,17 @@ namespace Homework.TelegramBot.ConsoleApp
                 TimeSpan.FromHours(1),
                 scenarioContextRepository,
                 botClient));
+            backgroundTaskRunner.AddTask(new NotificationBackgroundTask(
+                notificationService,
+                botClient));
+            backgroundTaskRunner.AddTask(new DeadlineBackgroundTask(
+                notificationService,
+                userRepository,
+                toDoRepository));
+            backgroundTaskRunner.AddTask(new TodayBackgroundTask(
+                notificationService,
+                userRepository,
+                toDoRepository));
             backgroundTaskRunner.StartTasks(cts.Token);
 
             var receiverOptions = new ReceiverOptions

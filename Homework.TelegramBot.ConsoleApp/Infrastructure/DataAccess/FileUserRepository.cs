@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -76,6 +77,29 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             }
 
             return null;
+        }
+
+        public async Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct)
+        {
+            var result = new List<ToDoUser>();
+
+            if (!Directory.Exists(_basePath))
+                return result;
+
+            var files = Directory.GetFiles(_basePath, "*.json");
+
+            foreach (var filePath in files)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var json = await File.ReadAllTextAsync(filePath, ct);
+                var dto = JsonSerializer.Deserialize<ToDoUserDto>(json, _jsonOptions);
+
+                if (dto != null)
+                    result.Add(dto.ToEntity());
+            }
+
+            return result;
         }
 
         private string GetFilePath(Guid userId)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.Entities;
@@ -10,5 +11,6 @@ namespace Homework.TelegramBot.ConsoleApp.Core.DataAccess
         Task<ToDoUser?> GetUserAsync(Guid userId, CancellationToken ct);
         Task<ToDoUser?> GetUserByTelegramUserIdAsync(long telegramUserId, CancellationToken ct);
         Task AddAsync(ToDoUser user, CancellationToken ct);
+        Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct);
     }
 }

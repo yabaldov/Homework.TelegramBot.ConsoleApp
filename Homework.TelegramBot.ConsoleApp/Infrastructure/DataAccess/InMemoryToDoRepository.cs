@@ -76,5 +76,16 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             var result = _items.Where(t => t.User.UserId == userId && t.List?.Id == listId).ToList();
             return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
         }
+
+        public Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
+        {
+            var result = _items
+                .Where(t => t.User.UserId == userId
+                    && t.State == ToDoItemState.Active
+                    && t.Deadline >= from
+                    && t.Deadline < to)
+                .ToList();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(result);
+        }
     }
 }

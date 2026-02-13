@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Homework.TelegramBot.ConsoleApp.Core.DataAccess;
@@ -37,6 +39,13 @@ namespace Homework.TelegramBot.ConsoleApp.Infrastructure.DataAccess
             using var db = _factory.CreateDataContext();
             var model = ModelMapper.MapToModel(user);
             await db.InsertAsync(model, token: ct);
+        }
+
+        public async Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct)
+        {
+            using var db = _factory.CreateDataContext();
+            var models = await db.ToDoUsers.ToListAsync(ct);
+            return models.Select(ModelMapper.MapFromModel).ToList();
         }
     }
 }
